@@ -1,0 +1,298 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Device is already configured",
+            "unsupported_brand": "This is a {brand} gateway. Its code and error tables are not written yet, so it cannot be set up. See the intesis-gw-modbus library for how to contribute them.",
+            "wrong_device": "The gateway at the new address is not the same model as the one this entry was set up with. Set it up as a new entry instead."
+        },
+        "error": {
+            "cannot_connect": "Failed to connect: {error}",
+            "wrong_model": "The gateway answered with a device ID that does not belong to this model. Pick the model that matches the label on the gateway."
+        },
+        "step": {
+            "features": {
+                "data": {
+                    "has_vane": "Unit has a swing vane"
+                },
+                "data_description": {
+                    "has_vane": "The gateway cannot tell whether the indoor unit has a motorised vane, so this is pre-filled from what it last reported. Turn it off for a unit without one and the climate entity will not offer swing modes."
+                },
+                "description": "Confirm what the indoor unit behind the gateway can do."
+            },
+            "model": {
+                "data": {
+                    "model": "Gateway model"
+                },
+                "data_description": {
+                    "model": "The part number printed on the gateway's label."
+                },
+                "description": "The gateway did not identify itself. Pick its model."
+            },
+            "reconfigure": {
+                "description": "Update where this gateway is reached, for example after it moved to another serial port or address.",
+                "menu_options": {
+                    "reconfigure_serial": "Serial port (Modbus RTU)",
+                    "reconfigure_tcp": "Modbus TCP"
+                }
+            },
+            "reconfigure_serial": {
+                "data": {
+                    "baudrate": "Baud rate",
+                    "device": "Serial port",
+                    "unit_id": "Modbus unit ID"
+                },
+                "data_description": {
+                    "baudrate": "The speed set on the gateway's SW3/SW4 DIP switches. The Intesis default is 9600.",
+                    "device": "Select a local serial port or a port shared over the network by a serial proxy.",
+                    "unit_id": "The gateway's Modbus slave address, set on its SW3 DIP switches. The Intesis default is 1."
+                },
+                "description": "Set up a gateway wired to a serial port over RS-485 (8 data bits, no parity, 2 stop bits). The gateway model is detected from its device ID where it reports one."
+            },
+            "reconfigure_tcp": {
+                "data": {
+                    "baudrate": "Baud rate",
+                    "framing": "Framing",
+                    "host": "Host",
+                    "port": "Port",
+                    "unit_id": "Modbus unit ID"
+                },
+                "data_description": {
+                    "baudrate": "Only used with RTU over TCP: the speed the serial server runs its line at.",
+                    "framing": "Modbus TCP for a gateway with an Ethernet port; RTU over TCP for a serial gateway behind a serial server.",
+                    "host": "The hostname or IP address of the device or its Modbus TCP gateway.",
+                    "port": "The Modbus TCP port to connect to.",
+                    "unit_id": "The gateway's Modbus slave address, set on its SW3 DIP switches. The Intesis default is 1."
+                },
+                "description": "Set up a gateway reached over the network, either a multi-unit gateway with an Ethernet port or a serial gateway behind a serial server."
+            },
+            "serial": {
+                "data": {
+                    "baudrate": "Baud rate",
+                    "device": "Serial port",
+                    "unit_id": "Modbus unit ID"
+                },
+                "data_description": {
+                    "baudrate": "The speed set on the gateway's SW3/SW4 DIP switches. The Intesis default is 9600.",
+                    "device": "Select a local serial port or a port shared over the network by a serial proxy.",
+                    "unit_id": "The gateway's Modbus slave address, set on its SW3 DIP switches. The Intesis default is 1."
+                },
+                "description": "Set up a gateway wired to a serial port over RS-485 (8 data bits, no parity, 2 stop bits). The gateway model is detected from its device ID where it reports one."
+            },
+            "tcp": {
+                "data": {
+                    "baudrate": "Baud rate",
+                    "framing": "Framing",
+                    "host": "Host",
+                    "port": "Port",
+                    "unit_id": "Modbus unit ID"
+                },
+                "data_description": {
+                    "baudrate": "Only used with RTU over TCP: the speed the serial server runs its line at.",
+                    "framing": "Modbus TCP for a gateway with an Ethernet port; RTU over TCP for a serial gateway behind a serial server.",
+                    "host": "The hostname or IP address of the device or its Modbus TCP gateway.",
+                    "port": "The Modbus TCP port to connect to.",
+                    "unit_id": "The gateway's Modbus slave address, set on its SW3 DIP switches. The Intesis default is 1."
+                },
+                "description": "Set up a gateway reached over the network, either a multi-unit gateway with an Ethernet port or a serial gateway behind a serial server."
+            },
+            "temperature_format": {
+                "data": {
+                    "temperature_format": "Temperature format"
+                },
+                "data_description": {
+                    "temperature_format": "How the gateway's SW4 DIP switches scale temperatures. It could not be detected, usually because the gateway is still starting up."
+                },
+                "description": "Pick the temperature format set on the gateway's SW4 DIP switches."
+            },
+            "user": {
+                "description": "An Intesis gateway can be reached over a serial port (RS-485) or over the network.",
+                "menu_options": {
+                    "serial": "Serial port (Modbus RTU)",
+                    "tcp": "Modbus TCP"
+                }
+            }
+        }
+    },
+    "device": {
+        "indoor_unit": {
+            "name": "Indoor unit {number}"
+        }
+    },
+    "entity": {
+        "binary_sensor": {
+            "alarm": {
+                "name": "Alarm"
+            },
+            "compressor": {
+                "name": "Compressor"
+            },
+            "filter_sign": {
+                "name": "Filter sign"
+            },
+            "hw_communication": {
+                "name": "Hardware communication"
+            }
+        },
+        "button": {
+            "reset_error": {
+                "name": "Reset error"
+            },
+            "reset_filter": {
+                "name": "Reset filter sign"
+            },
+            "reset_gateway": {
+                "name": "Reset gateway"
+            }
+        },
+        "climate": {
+            "air_conditioner": {
+                "state_attributes": {
+                    "fan_mode": {
+                        "state": {
+                            "powerful": "Powerful"
+                        }
+                    },
+                    "swing_mode": {
+                        "state": {
+                            "position_1": "Position 1",
+                            "position_2": "Position 2",
+                            "position_3": "Position 3",
+                            "position_4": "Position 4",
+                            "swing": "Swing"
+                        }
+                    }
+                }
+            }
+        },
+        "number": {
+            "external_temperature": {
+                "name": "External temperature reference"
+            },
+            "window_timeout": {
+                "name": "Open window timeout"
+            }
+        },
+        "sensor": {
+            "ambient_temperature": {
+                "name": "Ambient temperature"
+            },
+            "control_lock": {
+                "name": "Control lock",
+                "state": {
+                    "lock_all": "All locked",
+                    "lock_on_off": "On/off locked",
+                    "remote_only": "Remote only",
+                    "remote_unlock": "Remote unlocked"
+                }
+            },
+            "error": {
+                "name": "Error",
+                "state": {
+                    "communication_error": "Communication error with the unit",
+                    "initialising": "Initialising",
+                    "none": "No error",
+                    "unit_error": "Unit error"
+                },
+                "state_attributes": {
+                    "code": {
+                        "name": "Code"
+                    },
+                    "description": {
+                        "name": "Description"
+                    },
+                    "error_address": {
+                        "name": "Indoor unit number"
+                    },
+                    "remote_controller_code": {
+                        "name": "Remote controller code"
+                    }
+                }
+            },
+            "fan_speed_count": {
+                "name": "Fan speed count"
+            },
+            "input_reference_temperature": {
+                "name": "Input reference temperature"
+            },
+            "operation_hours": {
+                "name": "Operation time"
+            },
+            "outdoor_intake_temperature": {
+                "name": "Outdoor intake temperature"
+            },
+            "real_setpoint": {
+                "name": "Applied setpoint"
+            },
+            "return_path_temperature": {
+                "name": "Return path temperature"
+            },
+            "setpoint_max": {
+                "name": "Maximum setpoint"
+            },
+            "setpoint_min": {
+                "name": "Minimum setpoint"
+            },
+            "undervoltage_hours": {
+                "name": "Undervoltage time"
+            }
+        },
+        "switch": {
+            "block_periodic_sendings": {
+                "name": "Block repeated commands"
+            },
+            "gateway_disabled": {
+                "name": "Gateway disabled"
+            },
+            "master": {
+                "name": "XY bus master"
+            },
+            "remote_controller_lock": {
+                "name": "Remote controller lock"
+            },
+            "window_contact": {
+                "name": "Window contact"
+            }
+        }
+    },
+    "exceptions": {
+        "modbus_error": {
+            "message": "Could not read the gateway."
+        },
+        "no_component_answered": {
+            "message": "The gateway answered none of the register blocks."
+        },
+        "no_indoor_units": {
+            "message": "The gateway lists no indoor unit yet. It is probably still starting up."
+        },
+        "unsupported_value": {
+            "message": "This unit does not support that value: {error}"
+        },
+        "write_failed": {
+            "message": "The gateway did not accept the command: {error}"
+        },
+        "wrong_model": {
+            "message": "The gateway on this port reports another device ID than the model this entry was set up as. Reconfigure the entry with the right model."
+        }
+    },
+    "issues": {
+        "temperature_format_changed": {
+            "description": "The gateway reports temperatures in another format than this entry was set up for. Someone probably changed its SW4 DIP switches. Reconfigure the gateway in Home Assistant, which detects the new format, or set the switches back and power-cycle the gateway.",
+            "title": "Temperature format changed"
+        }
+    },
+    "selector": {
+        "framing": {
+            "options": {
+                "rtu_over_tcp": "RTU over TCP (serial server)",
+                "tcp": "Modbus TCP"
+            }
+        },
+        "temperature_format": {
+            "options": {
+                "celsius": "Degrees Celsius (x1)",
+                "decicelsius": "Tenths of a degree Celsius (x10)",
+                "fahrenheit": "Degrees Fahrenheit"
+            }
+        }
+    }
+}
