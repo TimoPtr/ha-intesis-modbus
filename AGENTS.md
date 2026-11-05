@@ -22,7 +22,9 @@ disclaimer and never present it as official.
   guard fixture in `tests/conftest.py`, and re-sorts imports with ruff. The
   `brand/` folder inside the component is this repository's: HACS needs the
   icons there, core keeps them in the brands repository, and the script
-  carries the folder over on every sync.
+  carries the folder over on every sync. The images are the official Intesis
+  wordmark from hms-networks.com, rendered in black for light themes and in
+  its original white for the `dark_` variants; do not redraw or restyle it.
 - Behaviour the core version does not have (a workaround for an older Home
   Assistant, for example) is not added here either; raise the minimum
   Home Assistant version in `hacs.json` instead.
