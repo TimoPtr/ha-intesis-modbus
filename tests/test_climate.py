@@ -1,24 +1,15 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Tests for the Intesis Modbus climate platform."""
 
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
-from freezegun.api import FrozenDateTimeFactory
-from modbus_connection import IllegalDataAddressError, ModbusTimeoutError
-from modbus_connection.mock import MockModbusConnection, WriteEvent
 import pytest
-from pytest_homeassistant.common import (
-    MockConfigEntry,
-    async_fire_time_changed,
-    snapshot_platform,
-)
-from syrupy.assertion import SnapshotAssertion
-
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.components.climate import (
     ATTR_FAN_MODE,
     ATTR_HVAC_MODE,
     ATTR_SWING_MODE,
-    DOMAIN as CLIMATE_DOMAIN,
     SERVICE_SET_FAN_MODE,
     SERVICE_SET_HVAC_MODE,
     SERVICE_SET_SWING_MODE,
@@ -28,10 +19,8 @@ from homeassistant.components.climate import (
     ClimateEntityFeature,
     HVACMode,
 )
-from custom_components.intesis_modbus.const import (
-    CONF_HAS_VANE,
-    DOMAIN,
-    SCAN_INTERVAL,
+from homeassistant.components.climate import (
+    DOMAIN as CLIMATE_DOMAIN,
 )
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import (
@@ -44,6 +33,20 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
+from modbus_connection import IllegalDataAddressError, ModbusTimeoutError
+from modbus_connection.mock import MockModbusConnection, WriteEvent
+from pytest_homeassistant.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+    snapshot_platform,
+)
+from syrupy.assertion import SnapshotAssertion
+
+from custom_components.intesis_modbus.const import (
+    CONF_HAS_VANE,
+    DOMAIN,
+    SCAN_INTERVAL,
+)
 
 from . import MOCK_SERIAL_ENTRY_DATA, seed_initialising_single_unit
 

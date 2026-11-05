@@ -1,12 +1,16 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Tests for the Intesis Modbus sensor platform."""
 
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
+import pytest
 from freezegun.api import FrozenDateTimeFactory
+from homeassistant.const import STATE_UNAVAILABLE, Platform
+from homeassistant.core import HomeAssistant, State
+from homeassistant.helpers import entity_registry as er
 from modbus_connection import IllegalDataAddressError, ModbusTimeoutError
 from modbus_connection.mock import MockModbusConnection
-import pytest
 from pytest_homeassistant.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -16,9 +20,6 @@ from pytest_homeassistant.common import (
 from syrupy.assertion import SnapshotAssertion
 
 from custom_components.intesis_modbus.const import SCAN_INTERVAL
-from homeassistant.const import STATE_UNAVAILABLE, Platform
-from homeassistant.core import HomeAssistant, State
-from homeassistant.helpers import entity_registry as er
 
 PREFIX = "sensor.inmbsmhi001r000_"
 

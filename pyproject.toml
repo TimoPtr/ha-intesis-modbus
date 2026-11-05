@@ -37,11 +37,11 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# The integration and its tests are copied verbatim from Home Assistant core
-# by scripts/sync_from_core.py and follow core's own ruff configuration.
-"custom_components/intesis_modbus/**" = ["ALL"]
-"tests/**" = ["ALL"]
-"scripts/**" = ["INP001", "T201"]  # standalone scripts that talk to the terminal
+"tests/**" = [
+    "S101", "S105", "D", "ANN", "SLF001", "PLR2004", "ARG001", "TC",
+    "ARG005",  # patch side effects must accept the patched signature
+    "PLR0913", "PLR0917",  # tests take as many fixtures as they need
+]
 
 [tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
@@ -67,9 +67,11 @@ addopts = [
     "--cov-fail-under=100",
 ]
 
-# Line coverage, like core: the copied tests are written to core's gate.
 [tool.coverage.run]
 source = ["custom_components/intesis_modbus"]
+
+[tool.coverage.report]
+exclude_also = ["if TYPE_CHECKING:"]
 
 [tool.mypy]
 strict = true

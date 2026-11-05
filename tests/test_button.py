@@ -1,18 +1,19 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Tests for the Intesis Modbus button platform."""
 
 from unittest.mock import MagicMock, patch
 
-from modbus_connection import ModbusTimeoutError
-from modbus_connection.mock import MockModbusConnection, WriteEvent
 import pytest
-from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
-from syrupy.assertion import SnapshotAssertion
-
-from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS
+from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN
+from homeassistant.components.button import SERVICE_PRESS
 from homeassistant.const import ATTR_ENTITY_ID, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
+from modbus_connection import ModbusTimeoutError
+from modbus_connection.mock import MockModbusConnection, WriteEvent
+from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
+from syrupy.assertion import SnapshotAssertion
 
 PREFIX = "button.inmbsmhi001r000_"
 

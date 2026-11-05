@@ -1,13 +1,13 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Tests for the Intesis Modbus diagnostics."""
 
+from homeassistant.core import HomeAssistant
 from modbus_connection import ModbusTimeoutError
 from modbus_connection.mock import MockModbusConnection
 from pytest_homeassistant.common import MockConfigEntry
 from pytest_homeassistant.components.diagnostics import get_diagnostics_for_config_entry
 from pytest_homeassistant.typing import ClientSessionGenerator
 from syrupy.assertion import SnapshotAssertion
-
-from homeassistant.core import HomeAssistant
 
 
 async def test_diagnostics_snapshot(

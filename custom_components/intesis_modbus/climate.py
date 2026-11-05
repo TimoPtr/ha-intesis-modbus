@@ -1,17 +1,8 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Climate entity for the air conditioner(s) behind an Intesis gateway."""
 
 from dataclasses import dataclass
-from typing import Any, Final, override
-
-from intesis_gw_modbus import (
-    AirConditioner,
-    FanSpeed,
-    GatewayFamily,
-    IndoorUnitView,
-    IntesisSingleUnitGateway,
-    Mode,
-    VanePosition,
-)
+from typing import TYPE_CHECKING, Any, Final, override
 
 from homeassistant.components.climate import (
     FAN_AUTO,
@@ -25,16 +16,28 @@ from homeassistant.components.climate import (
     HVACMode,
 )
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from intesis_gw_modbus import (
+    AirConditioner,
+    FanSpeed,
+    GatewayFamily,
+    IndoorUnitView,
+    IntesisSingleUnitGateway,
+    Mode,
+    VanePosition,
+)
 
 from .const import CONF_HAS_VANE
-from .coordinator import IntesisConfigEntry, IntesisCoordinator
 from .entity import (
     IntesisEntity,
     IntesisEntityDescription,
     async_add_indoor_unit_entities,
 )
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from .coordinator import IntesisConfigEntry, IntesisCoordinator
 
 PARALLEL_UPDATES = 1
 
@@ -90,7 +93,7 @@ INDOOR_UNIT_CLIMATE_DESCRIPTION: Final = IntesisClimateEntityDescription(
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    hass: HomeAssistant,  # noqa: ARG001
     entry: IntesisConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
@@ -229,23 +232,23 @@ class IntesisClimate(IntesisEntity, ClimateEntity):
     @override
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         if hvac_mode is HVACMode.OFF:
-            await self._async_write(lambda: self._ac.async_set_power(False))
+            await self._async_write(lambda: self._ac.async_set_power(False))  # noqa: FBT003
             return
 
         async def _set_mode_and_power_on() -> None:
             await self._ac.async_set_mode(HVAC_TO_MODE[hvac_mode])
             if self._ac.power is not True:
-                await self._ac.async_set_power(True)
+                await self._ac.async_set_power(True)  # noqa: FBT003
 
         await self._async_write(_set_mode_and_power_on)
 
     @override
     async def async_turn_on(self) -> None:
-        await self._async_write(lambda: self._ac.async_set_power(True))
+        await self._async_write(lambda: self._ac.async_set_power(True))  # noqa: FBT003
 
     @override
     async def async_turn_off(self) -> None:
-        await self._async_write(lambda: self._ac.async_set_power(False))
+        await self._async_write(lambda: self._ac.async_set_power(False))  # noqa: FBT003
 
     @override
     async def async_set_fan_mode(self, fan_mode: str) -> None:

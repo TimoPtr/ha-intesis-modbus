@@ -1,9 +1,13 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Base entity for Intesis Modbus gateways."""
 
-from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
-from typing import override
+from typing import TYPE_CHECKING, override
 
+from homeassistant.core import callback
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers.entity import Entity, EntityDescription
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from intesis_gw_modbus import (
     GatewayFamily,
     IndoorUnitView,
@@ -12,14 +16,13 @@ from intesis_gw_modbus import (
 )
 from modbus_connection import ModbusError
 
-from homeassistant.core import callback
-from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
-from homeassistant.helpers.entity import Entity, EntityDescription
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-
 from .const import DOMAIN
 from .coordinator import IntesisConfigEntry, IntesisCoordinator
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable, Iterable
+
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 SINGLE_UNIT_ONLY = frozenset({GatewayFamily.SINGLE_UNIT})
 MULTI_UNIT_ONLY = frozenset({GatewayFamily.MULTI_UNIT})

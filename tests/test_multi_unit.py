@@ -1,32 +1,24 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Tests for a multi-unit gateway end to end."""
 
 from datetime import timedelta
 from unittest.mock import patch
 
-from freezegun.api import FrozenDateTimeFactory
-from intesis_gw_modbus.multi_unit.device import REDISCOVERY_BATCH
-from modbus_connection import ServerDeviceFailureError
-from modbus_connection.mock import MockModbusConnection, WriteEvent
 import pytest
-from pytest_homeassistant.common import (
-    MockConfigEntry,
-    async_fire_time_changed,
-    snapshot_platform,
-)
-from pytest_homeassistant.typing import WebSocketGenerator
-from syrupy.assertion import SnapshotAssertion
-
-from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS
+from freezegun.api import FrozenDateTimeFactory
+from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN
+from homeassistant.components.button import SERVICE_PRESS
 from homeassistant.components.climate import (
     ATTR_HVAC_ACTION,
     ATTR_HVAC_MODE,
-    DOMAIN as CLIMATE_DOMAIN,
     SERVICE_SET_HVAC_MODE,
     SERVICE_SET_TEMPERATURE,
     HVACAction,
     HVACMode,
 )
-from custom_components.intesis_modbus.const import DOMAIN, SCAN_INTERVAL
+from homeassistant.components.climate import (
+    DOMAIN as CLIMATE_DOMAIN,
+)
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import (
@@ -40,8 +32,21 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
-from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
+from intesis_gw_modbus.multi_unit.device import REDISCOVERY_BATCH
+from modbus_connection import ServerDeviceFailureError
+from modbus_connection.mock import MockModbusConnection, WriteEvent
+from pytest_homeassistant.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+    snapshot_platform,
+)
+from pytest_homeassistant.typing import WebSocketGenerator
+from syrupy.assertion import SnapshotAssertion
+
+from custom_components.intesis_modbus.const import DOMAIN, SCAN_INTERVAL
 
 from . import MOCK_MULTI_ENTRY_DATA, seed_multi_unit
 

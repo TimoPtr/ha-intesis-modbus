@@ -1,30 +1,34 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Binary sensors for the status flags an Intesis gateway reports."""
 
-from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Final, override
-
-from intesis_gw_modbus import (
-    IndoorUnitView,
-    IntesisMultiUnitGateway,
-    IntesisSingleUnitGateway,
-)
+from typing import TYPE_CHECKING, Final, override
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from intesis_gw_modbus import (
+    IndoorUnitView,
+    IntesisMultiUnitGateway,
+    IntesisSingleUnitGateway,
+)
 
-from .coordinator import IntesisConfigEntry, IntesisCoordinator
 from .entity import (
     MULTI_UNIT_ONLY,
     IntesisEntity,
     IntesisEntityDescription,
     async_add_indoor_unit_entities,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from .coordinator import IntesisConfigEntry, IntesisCoordinator
 
 PARALLEL_UPDATES = 1
 
@@ -93,7 +97,7 @@ GATEWAY_BINARY_SENSORS: Final[
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    hass: HomeAssistant,  # noqa: ARG001
     entry: IntesisConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:

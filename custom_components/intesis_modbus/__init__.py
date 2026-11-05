@@ -1,16 +1,20 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """The Intesis Modbus integration."""
 
-from intesis_gw_modbus import MODELS, IntesisMultiUnitGateway
+from typing import TYPE_CHECKING
 
 from homeassistant.components.modbus import async_get_unit
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
+from intesis_gw_modbus import MODELS, IntesisMultiUnitGateway
 
 from .const import CONF_MODEL, CONF_UNIT_ID, DOMAIN
 from .coordinator import IntesisConfigEntry, IntesisCoordinator, IntesisRuntimeData
 from .helpers import create_device, create_modbus_params
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -47,7 +51,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: IntesisConfigEntry) -> 
 
 
 async def async_remove_config_entry_device(
-    hass: HomeAssistant,
+    hass: HomeAssistant,  # noqa: ARG001
     entry: IntesisConfigEntry,
     device_entry: dr.AnyDeviceEntry,
 ) -> bool:

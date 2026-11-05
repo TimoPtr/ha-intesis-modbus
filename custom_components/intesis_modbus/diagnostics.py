@@ -1,20 +1,23 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Diagnostics support for Intesis Modbus gateways."""
 
-from typing import Any
-
-from modbus_connection import ModbusError
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.const import CONF_DEVICE, CONF_HOST
-from homeassistant.core import HomeAssistant
+from modbus_connection import ModbusError
 
-from .coordinator import IntesisConfigEntry
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+
+    from .coordinator import IntesisConfigEntry
 
 TO_REDACT = {CONF_DEVICE, CONF_HOST}
 
 
 async def async_get_config_entry_diagnostics(
-    hass: HomeAssistant, entry: IntesisConfigEntry
+    hass: HomeAssistant,  # noqa: ARG001
+    entry: IntesisConfigEntry,
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry: the live raw register map."""
     runtime_data = entry.runtime_data

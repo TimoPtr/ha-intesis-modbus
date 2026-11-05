@@ -1,23 +1,27 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Switches for the on/off settings of an Intesis gateway."""
 
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Final, override
-
-from intesis_gw_modbus import IndoorUnitView, IntesisSingleUnitGateway
+from typing import TYPE_CHECKING, Any, Final, override
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from intesis_gw_modbus import IndoorUnitView, IntesisSingleUnitGateway
 
-from .coordinator import IntesisConfigEntry, IntesisCoordinator
 from .entity import (
     MULTI_UNIT_ONLY,
     IntesisEntity,
     IntesisEntityDescription,
     async_add_indoor_unit_entities,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from .coordinator import IntesisConfigEntry, IntesisCoordinator
 
 PARALLEL_UPDATES = 1
 
@@ -92,7 +96,7 @@ INDOOR_UNIT_SWITCHES: Final[tuple[IntesisSwitchDescription[IndoorUnitView], ...]
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    hass: HomeAssistant,  # noqa: ARG001
     entry: IntesisConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
@@ -141,11 +145,11 @@ class IntesisSwitch[TargetT](IntesisEntity, SwitchEntity):
     @override
     async def async_turn_on(self, **kwargs: Any) -> None:
         await self._async_write(
-            lambda: self.entity_description.set_fn(self._target, True)
+            lambda: self.entity_description.set_fn(self._target, True)  # noqa: FBT003
         )
 
     @override
     async def async_turn_off(self, **kwargs: Any) -> None:
         await self._async_write(
-            lambda: self.entity_description.set_fn(self._target, False)
+            lambda: self.entity_description.set_fn(self._target, False)  # noqa: FBT003
         )

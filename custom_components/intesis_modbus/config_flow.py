@@ -1,21 +1,11 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Config flow for the Intesis Modbus integration."""
 
-from dataclasses import dataclass
 import logging
-from typing import Any, override
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, override
 
-from intesis_gw_modbus import (
-    KNOWN_DEVICE_IDS,
-    MODELS,
-    GatewayFamily,
-    GatewayModel,
-    TemperatureFormat,
-    detect_temperature_format,
-    model_for_device_id,
-)
-from modbus_connection import ModbusError, ModbusExceptionError, ModbusUnit
 import probatio
-
 from homeassistant.components.modbus import async_get_temporary_unit
 from homeassistant.config_entries import (
     SOURCE_RECONFIGURE,
@@ -23,7 +13,6 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
 )
 from homeassistant.const import CONF_DEVICE, CONF_HOST, CONF_PORT, CONF_TYPE
-from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.selector import (
     BooleanSelector,
@@ -36,6 +25,16 @@ from homeassistant.helpers.selector import (
     SerialPortSelector,
     TextSelector,
 )
+from intesis_gw_modbus import (
+    KNOWN_DEVICE_IDS,
+    MODELS,
+    GatewayFamily,
+    GatewayModel,
+    TemperatureFormat,
+    detect_temperature_format,
+    model_for_device_id,
+)
+from modbus_connection import ModbusError, ModbusExceptionError, ModbusUnit
 
 from .const import (
     CONF_BAUDRATE,
@@ -54,6 +53,9 @@ from .const import (
     TYPE_TCP,
 )
 from .helpers import create_modbus_params, unique_id_for
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -201,7 +203,8 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_reconfigure(
-        self, user_input: dict[str, Any] | None = None
+        self,
+        user_input: dict[str, Any] | None = None,  # noqa: ARG002
     ) -> ConfigFlowResult:
         """Let the user pick how the gateway is reached from now on."""
         return self.async_show_menu(
@@ -306,7 +309,8 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_features(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Confirm what the unit behind the gateway can do.
+        """
+        Confirm what the unit behind the gateway can do.
 
         The gateway has no capability register for the vane, so the probe's
         reading of register 3 only pre-fills the answer.
@@ -318,7 +322,8 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
         if self.source == SOURCE_RECONFIGURE:
             has_vane = self._get_reconfigure_entry().data.get(CONF_HAS_VANE, True)
         else:
-            assert self._model is not None
+            if TYPE_CHECKING:
+                assert self._model is not None
             has_vane = self._probe.raw_vane in self._model.brand.vane_positions
         return self.async_show_form(
             step_id=STEP_FEATURES,

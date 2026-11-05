@@ -9,5 +9,5 @@ rules:
 
 ignore:
   - .venv/
-  # Copied verbatim from Home Assistant core, which has its own YAML rules.
+  # Home Assistant's quality scale format: no document start, long comments.
   - custom_components/intesis_modbus/quality_scale.yaml

@@ -6,7 +6,7 @@ Home Assistant custom integration for [Intesis](https://www.intesis.com) INMBS M
 
 ## This is a preview of a core integration
 
-The integration is developed for Home Assistant core, where it is submitted as `intesis_modbus`. This repository publishes the same code through HACS so it can be installed and tested before the core version ships. Nothing in `custom_components/` is edited here: it is copied from the core branch by `scripts/sync_from_core.py`.
+The same integration is being proposed for Home Assistant core as `intesis_modbus`. This repository publishes it through HACS so it can be installed and tested before the core version ships.
 
 Once the core integration is released, uninstall this one and restart Home Assistant. The domain is the same, so your gateways and entities carry over. This repository will then be archived.
 
@@ -140,8 +140,9 @@ On a multi-unit gateway, indoor units the gateway starts talking to after setup 
 
 ```bash
 python3.15 -m venv .venv && .venv/bin/pip install ".[test]"
-.venv/bin/pytest                                   # 100 % coverage is enforced
-.venv/bin/python scripts/sync_from_core.py /path/to/core   # refresh the copy from a core checkout
+.venv/bin/pytest          # 100 % coverage is enforced
+.venv/bin/mypy custom_components/intesis_modbus/
+.venv/bin/ruff check . && .venv/bin/ruff format --check .
 ```
 
 Tests run on `pytest-homeassistant`, Home Assistant's own test harness, against the mock Modbus backend of `modbus-connection`; no hardware is needed.

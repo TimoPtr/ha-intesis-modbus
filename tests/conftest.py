@@ -1,15 +1,16 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Fixtures for the Intesis Modbus integration tests."""
 
 import logging
 from collections.abc import Generator, Iterator
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from modbus_connection.mock import MockModbusConnection
 import pytest
+from homeassistant.core import HomeAssistant
+from modbus_connection.mock import MockModbusConnection
 from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.intesis_modbus.const import DOMAIN
-from homeassistant.core import HomeAssistant
 
 from . import MOCK_SERIAL_ENTRY_DATA, seed_single_unit
 

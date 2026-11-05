@@ -1,8 +1,9 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Helpers shared by the config flow and the entry setup."""
 
-from collections.abc import Mapping
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from homeassistant.const import CONF_DEVICE, CONF_HOST, CONF_PORT, CONF_TYPE
 from intesis_gw_modbus import (
     MODELS,
     GatewayFamily,
@@ -11,8 +12,6 @@ from intesis_gw_modbus import (
     TemperatureFormat,
 )
 from modbus_connection import ModbusSerialParams, ModbusTcpParams, ModbusUnit
-
-from homeassistant.const import CONF_DEVICE, CONF_HOST, CONF_PORT, CONF_TYPE
 
 from .const import (
     CONF_BAUDRATE,
@@ -24,6 +23,9 @@ from .const import (
     FRAMING_RTU_OVER_TCP,
     TYPE_SERIAL,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 type IntesisDevice = IntesisSingleUnitGateway | IntesisMultiUnitGateway
 
@@ -52,7 +54,7 @@ def create_modbus_params(
 
 
 def unique_id_for(data: Mapping[str, Any]) -> str:
-    """The unique id of the gateway these link settings reach."""
+    """Return the unique id of the gateway these link settings reach."""
     if data[CONF_TYPE] == TYPE_SERIAL:
         return f"{data[CONF_DEVICE]}:{data[CONF_UNIT_ID]}"
     return f"{data[CONF_HOST]}:{data[CONF_PORT]}:{data[CONF_UNIT_ID]}"
@@ -67,5 +69,6 @@ def create_device(unit: ModbusUnit, data: Mapping[str, Any]) -> IntesisDevice:
             brand=model.brand,
             temperature_format=TemperatureFormat(data[CONF_TEMPERATURE_FORMAT]),
         )
-    assert model.unit_count is not None
+    if TYPE_CHECKING:
+        assert model.unit_count is not None
     return IntesisMultiUnitGateway(unit, brand=model.brand, unit_count=model.unit_count)

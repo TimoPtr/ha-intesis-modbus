@@ -1,10 +1,16 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Data update coordinator for Intesis Modbus gateways."""
 
+import logging
 from dataclasses import dataclass
 from datetime import timedelta
-import logging
-from typing import override
+from typing import TYPE_CHECKING, override
 
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.exceptions import ConfigEntryError
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from intesis_gw_modbus import (
     GatewayFamily,
     IntesisSingleUnitGateway,
@@ -15,14 +21,12 @@ from modbus_connection import ModbusError
 from modbus_connection.model import UpdateReport
 from propcache.api import cached_property
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryError
-from homeassistant.helpers import device_registry as dr, issue_registry as ir
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-
 from .const import CONF_MODEL, DOMAIN, MANUFACTURER, SCAN_INTERVAL
-from .helpers import IntesisDevice
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+
+    from .helpers import IntesisDevice
 
 _LOGGER = logging.getLogger(__name__)
 

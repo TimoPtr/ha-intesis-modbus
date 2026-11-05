@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Constants for the Intesis Modbus integration."""
 
 from typing import Final

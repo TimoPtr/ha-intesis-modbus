@@ -1,12 +1,9 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Tests for the Intesis Modbus switch platform."""
 
 from unittest.mock import MagicMock, patch
 
-from modbus_connection.mock import MockModbusConnection, WriteEvent
 import pytest
-from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
-from syrupy.assertion import SnapshotAssertion
-
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
 from homeassistant.const import (
     ATTR_ENTITY_ID,
@@ -18,6 +15,9 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from modbus_connection.mock import MockModbusConnection, WriteEvent
+from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
+from syrupy.assertion import SnapshotAssertion
 
 PREFIX = "switch.inmbsmhi001r000_"
 

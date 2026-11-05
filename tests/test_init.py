@@ -1,9 +1,15 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Tests for the Intesis Modbus integration setup."""
 
 from datetime import timedelta
 from unittest.mock import MagicMock
 
 from freezegun.api import FrozenDateTimeFactory
+from homeassistant.config_entries import ConfigEntryState
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import issue_registry as ir
+from homeassistant.loader import async_get_integration
 from modbus_connection import ModbusTimeoutError
 from modbus_connection.mock import MockModbusConnection
 from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
@@ -13,10 +19,6 @@ from custom_components.intesis_modbus.const import (
     MANUFACTURER,
     SCAN_INTERVAL,
 )
-from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, issue_registry as ir
-from homeassistant.loader import async_get_integration
 
 from . import seed_initialising_single_unit
 

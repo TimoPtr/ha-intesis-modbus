@@ -1,7 +1,9 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Tests for the Intesis Modbus integration."""
 
 from collections.abc import Iterable
 
+from homeassistant.const import CONF_DEVICE, CONF_HOST, CONF_PORT, CONF_TYPE
 from modbus_connection.mock import MockModbusUnit
 
 from custom_components.intesis_modbus.const import (
@@ -15,7 +17,6 @@ from custom_components.intesis_modbus.const import (
     TYPE_SERIAL,
     TYPE_TCP,
 )
-from homeassistant.const import CONF_DEVICE, CONF_HOST, CONF_PORT, CONF_TYPE
 
 INIT_VALUE = 0x8000
 

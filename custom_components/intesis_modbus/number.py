@@ -1,10 +1,8 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Numbers for the settings an Intesis gateway accepts."""
 
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Final, override
-
-from intesis_gw_modbus import IntesisSingleUnitGateway
+from typing import TYPE_CHECKING, Final, override
 
 from homeassistant.components.number import (
     NumberDeviceClass,
@@ -13,11 +11,17 @@ from homeassistant.components.number import (
     NumberMode,
 )
 from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from intesis_gw_modbus import IntesisSingleUnitGateway
 
-from .coordinator import IntesisConfigEntry, IntesisCoordinator
 from .entity import IntesisEntity, IntesisEntityDescription
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+
+    from .coordinator import IntesisConfigEntry, IntesisCoordinator
 
 PARALLEL_UPDATES = 1
 
@@ -65,7 +69,7 @@ NUMBERS: Final[tuple[IntesisNumberDescription, ...]] = (
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    hass: HomeAssistant,  # noqa: ARG001
     entry: IntesisConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:

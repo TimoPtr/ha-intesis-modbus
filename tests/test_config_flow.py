@@ -1,3 +1,4 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Tests for the Intesis Modbus config flow."""
 
 from collections.abc import AsyncIterator
@@ -5,6 +6,12 @@ from contextlib import asynccontextmanager
 from typing import Any
 from unittest.mock import AsyncMock, _patch, patch
 
+import pytest
+from homeassistant import config_entries
+from homeassistant.const import CONF_DEVICE, CONF_TYPE
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.exceptions import HomeAssistantError
 from modbus_connection import (
     IllegalDataAddressError,
     ModbusSerialParams,
@@ -12,10 +19,8 @@ from modbus_connection import (
     ModbusTimeoutError,
 )
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit
-import pytest
 from pytest_homeassistant.common import MockConfigEntry, get_schema_suggested_value
 
-from homeassistant import config_entries
 from custom_components.intesis_modbus.const import (
     CONF_BAUDRATE,
     CONF_FRAMING,
@@ -28,10 +33,6 @@ from custom_components.intesis_modbus.const import (
     TYPE_TCP,
 )
 from custom_components.intesis_modbus.helpers import create_modbus_params
-from homeassistant.const import CONF_DEVICE, CONF_TYPE
-from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
-from homeassistant.exceptions import HomeAssistantError
 
 from . import (
     MOCK_MULTI_ENTRY_DATA,

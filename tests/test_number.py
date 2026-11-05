@@ -1,22 +1,24 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Tests for the Intesis Modbus number platform."""
 
 from unittest.mock import MagicMock, patch
 
-from modbus_connection import ModbusTimeoutError
-from modbus_connection.mock import MockModbusConnection, WriteEvent
 import pytest
-from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
-from syrupy.assertion import SnapshotAssertion
-
 from homeassistant.components.number import (
     ATTR_VALUE,
-    DOMAIN as NUMBER_DOMAIN,
     SERVICE_SET_VALUE,
+)
+from homeassistant.components.number import (
+    DOMAIN as NUMBER_DOMAIN,
 )
 from homeassistant.const import ATTR_ENTITY_ID, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import entity_registry as er
+from modbus_connection import ModbusTimeoutError
+from modbus_connection.mock import MockModbusConnection, WriteEvent
+from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
+from syrupy.assertion import SnapshotAssertion
 
 PREFIX = "number.inmbsmhi001r000_"
 

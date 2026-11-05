@@ -1,11 +1,15 @@
+# Copyright (c) 2026 Timothy (TimoPtr)
 """Tests for the Intesis Modbus binary sensor platform."""
 
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
-from freezegun.api import FrozenDateTimeFactory
-from modbus_connection.mock import MockModbusConnection
 import pytest
+from freezegun.api import FrozenDateTimeFactory
+from homeassistant.const import STATE_OFF, STATE_ON, Platform
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
+from modbus_connection.mock import MockModbusConnection
 from pytest_homeassistant.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -14,9 +18,6 @@ from pytest_homeassistant.common import (
 from syrupy.assertion import SnapshotAssertion
 
 from custom_components.intesis_modbus.const import SCAN_INTERVAL
-from homeassistant.const import STATE_OFF, STATE_ON, Platform
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
 
 PREFIX = "binary_sensor.inmbsmhi001r000_"
 
