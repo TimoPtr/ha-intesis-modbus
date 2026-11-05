@@ -5,7 +5,7 @@ requires-python = ">=3.14"
 dependencies = [
     # The manifest requires intesis-gw-modbus==0.1.0 from PyPI; until that
     # release exists, tests install the library from its pull-request branch.
-    "intesis-gw-modbus @ git+https://github.com/TimoPtr/intesis-gw-modbus@3f8142a84385ef68db2bbe50af57d181fd859f4c",
+    "intesis-gw-modbus @ git+https://github.com/TimoPtr/intesis-gw-modbus@8107629f4268ca5b5ccd9d2845b091d2668a9721",
 ]
 
 [project.optional-dependencies]
