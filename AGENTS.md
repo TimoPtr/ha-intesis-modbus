@@ -19,7 +19,10 @@ disclaimer and never present it as official.
   copies both trees, rewrites `homeassistant.components.intesis_modbus` to
   `custom_components.intesis_modbus`, adds the custom-integration manifest
   keys (`version`, `documentation`, `issue_tracker`) and the deprecation
-  guard fixture in `tests/conftest.py`, and re-sorts imports with ruff.
+  guard fixture in `tests/conftest.py`, and re-sorts imports with ruff. The
+  `brand/` folder inside the component is this repository's: HACS needs the
+  icons there, core keeps them in the brands repository, and the script
+  carries the folder over on every sync.
 - Behaviour the core version does not have (a workaround for an older Home
   Assistant, for example) is not added here either; raise the minimum
   Home Assistant version in `hacs.json` instead.
@@ -31,13 +34,16 @@ disclaimer and never present it as official.
 
 ```bash
 python3.15 -m venv .venv && .venv/bin/pip install ".[test]"
-.venv/bin/pip install --no-deps /path/to/intesis-gw-modbus   # until the library is on PyPI
 pytest                                 # 100 % coverage is enforced
 mypy custom_components/intesis_modbus/
 ruff check . && ruff format --check .  # repository-owned files only; copied trees are exempt
 yamllint .
 python scripts/sync_from_core.py /path/to/core
 ```
+
+Until `intesis-gw-modbus` 0.1.0 is on PyPI, `pyproject.toml` installs the
+library from a pinned commit of its pull-request branch; the manifest keeps the
+PyPI requirement. Switch the dependency to `==0.1.0` after the release.
 
 Tests use `pytest-homeassistant`, Home Assistant's own harness, whose release
 pins the matching `homeassistant` version: bump the two together with the

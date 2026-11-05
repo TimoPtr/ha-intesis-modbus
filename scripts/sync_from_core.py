@@ -61,10 +61,21 @@ def fail_on_deprecated_usage(caplog: pytest.LogCaptureFixture) -> Iterator[None]
 '''
 
 
-def _copy_tree(src: Path, dst: Path) -> None:
+def _copy_tree(src: Path, dst: Path, keep: tuple[str, ...] = ()) -> None:
+    """Replace ``dst`` with ``src``, carrying over the ``keep`` entries of ``dst``."""
+    kept = {name: (dst / name).read_bytes() for name in keep if (dst / name).is_file()}
+    kept_dirs = {name: dst / name for name in keep if (dst / name).is_dir()}
+    staged = {
+        name: shutil.copytree(path, dst.parent / f".{name}.sync")
+        for name, path in kept_dirs.items()
+    }
     if dst.exists():
         shutil.rmtree(dst)
     shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__"))
+    for name, data in kept.items():
+        (dst / name).write_bytes(data)
+    for name, path in staged.items():
+        shutil.move(str(path), dst / name)
 
 
 def _rewrite(path: Path) -> None:
@@ -116,7 +127,12 @@ def main(argv: list[str]) -> int:
         return 2
     core = Path(argv[1]).resolve()
     version = json.loads((COMPONENT / "manifest.json").read_text())["version"]
-    _copy_tree(core / "homeassistant" / "components" / "intesis_modbus", COMPONENT)
+    # brand/ holds this repository's HACS icons; core keeps them in the brands repo.
+    _copy_tree(
+        core / "homeassistant" / "components" / "intesis_modbus",
+        COMPONENT,
+        keep=("brand",),
+    )
     _copy_tree(core / "tests" / "components" / "intesis_modbus", TESTS)
     for path in [
         *COMPONENT.rglob("*.py"),
