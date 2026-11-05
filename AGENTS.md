@@ -41,9 +41,8 @@ yamllint .
 python scripts/sync_from_core.py /path/to/core
 ```
 
-Until `intesis-gw-modbus` 0.1.0 is on PyPI, `pyproject.toml` installs the
-library from a pinned commit of its pull-request branch; the manifest keeps the
-PyPI requirement. Switch the dependency to `==0.1.0` after the release.
+`pyproject.toml` and the manifest pin the same `intesis-gw-modbus` release;
+bump them together.
 
 Tests use `pytest-homeassistant`, Home Assistant's own harness, whose release
 pins the matching `homeassistant` version: bump the two together with the
