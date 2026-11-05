@@ -56,6 +56,7 @@ The gateway's DIP switches set how it talks on the bus. Note them before setting
 - **Baud rate** (SW3/SW4; factory default 9600): the *baud rate* the integration asks for. The gateway always uses 8 data bits, no parity and 2 stop bits.
 - **Temperature format** (SW4): degrees Celsius, tenths of a degree Celsius, or degrees Fahrenheit. The integration detects it from the gateway's setpoint register and only asks when the gateway is still starting up. Home Assistant always shows and accepts degrees Celsius whatever the switch says.
 - **Termination resistor** (SW4): enable it when the gateway is at the end of the RS-485 bus.
+- **XY bus role** (SW1; factory default slave): whether the gateway is the master or a slave on the air conditioner's own XY bus. As a slave it needs a Mitsubishi Heavy Industries wired remote controller on the bus acting as master. As a master it needs none, and any remote controller present must itself be set as slave. Exactly one device on the XY bus must be the master. The role does not change how the integration is set up, but it changes what the *External temperature reference* does: as master the value is applied to the indoor unit directly, as slave the gateway shifts the setpoint to compensate, so the wall remote can show a different setpoint than Home Assistant.
 
 Prefer the adapter's stable path under `/dev/serial/by-id/` over `/dev/ttyUSBx`, which can change after a reboot.
 
@@ -101,6 +102,8 @@ Single-unit gateways: external temperature reference, the temperature the unit r
 
 Single-unit gateways: window contact, remote controller lock. Disabled by default: gateway disabled, block repeated commands, XY bus master. Indoor units: remote controller lock.
 
+The *XY bus master* switch mirrors the SW1 role (register 98). Leave it alone unless you are also changing the wall remote's role: with no master left on the XY bus, the indoor unit stops answering the gateway.
+
 ### Buttons
 
 Single-unit gateways: reset error. Disabled by default: reset gateway. Indoor units: reset filter sign, reset error.
@@ -115,6 +118,7 @@ On a multi-unit gateway, indoor units the gateway starts talking to after setup 
 
 - Single-unit gateways do not report whether the unit is actively heating or cooling, so their climate entity has no HVAC action.
 - The gateway's own bus settings (address, baud rate) are never written by the integration; change them on the DIP switches.
+- The manual does not say whether the SW1 switch or a value written through the *XY bus master* switch wins after the gateway is power-cycled.
 - Multi-unit gateways are modelled from the manual and have not been tested on hardware.
 - Gateways are not discovered; set them up from the integrations page.
 
@@ -122,6 +126,7 @@ On a multi-unit gateway, indoor units the gateway starts talking to after setup 
 
 - **The flow says the gateway answered with another device ID** — The gateway on that port is not the model you picked. Check the label and pick the matching model, or let the integration detect it.
 - **Every value is unknown right after setup** — The gateway initialises for about two minutes after power-up and reports no values meanwhile; the *Error* sensor shows *Initialising*. Wait, nothing to fix.
+- **The Error sensor shows a communication error with the unit** — The gateway answers on Modbus but cannot talk to the indoor unit. Check the XY bus wiring, then the bus roles: exactly one device must be the master. A gateway set as slave (SW1, the factory default) with no wall remote, or with a wall remote that is also a slave, has no master to talk to; a gateway and a remote both set as master collide.
 - **Timeouts or unavailable entities** — Check the RS-485 wiring (A/B polarity), the termination resistor at the ends of the bus, the baud rate against the DIP switches, and that the gateway's address matches the unit ID. The gateway uses 2 stop bits; some adapters need that set explicitly.
 - **A repair issue says the temperature format changed** — Someone moved the SW4 DIP switches. Reconfigure the gateway in Home Assistant and pick the matching format, or set the switches back and power-cycle the gateway.
 
