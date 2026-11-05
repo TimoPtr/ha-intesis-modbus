@@ -1,0 +1,77 @@
+[project]
+name = "ha-intesis-modbus"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = ["intesis-gw-modbus==0.1.0"]
+
+[project.optional-dependencies]
+test = [
+    # Home Assistant's own test harness; its release pins the matching
+    # homeassistant version, so keep it in step with hacs.json.
+    "pytest-homeassistant==2026.11.0b6",
+    # Requirements of the core integrations this one depends on (modbus, usb),
+    # pinned to what Home Assistant 2026.11.0 ships.
+    "modbus-connection[tmodbus]==4.12.7",
+    "tmodbus==1.1.0",
+    "pymodbus==3.13.1",
+    "aiousbwatcher==1.1.2",
+    "serialx==1.15.1",
+    "aiohasupervisor==0.8.1",  # imported by usb through the supervisor helpers
+    "pytest-cov==7.1.0",
+    "mypy==2.4.1",
+    "ruff==0.17.3",
+    "yamllint==1.38.0",
+]
+
+[tool.ruff]
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
+    "D203", # no-blank-line-before-class (incompatible with formatter)
+    "D212", # multi-line-summary-first-line (incompatible with formatter)
+    "COM812", # incompatible with formatter
+    "ISC001", # incompatible with formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+# The integration and its tests are copied verbatim from Home Assistant core
+# by scripts/sync_from_core.py and follow core's own ruff configuration.
+"custom_components/intesis_modbus/**" = ["ALL"]
+"tests/**" = ["ALL"]
+"scripts/**" = ["INP001", "T201"]  # standalone scripts that talk to the terminal
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.ruff.lint.mccabe]
+max-complexity = 25
+
+[tool.ruff.lint.isort]
+known-first-party = ["custom_components.intesis_modbus"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = [
+    "-p", "no:respx",  # let Home Assistant install its httpx alias first
+    "--cov=custom_components/intesis_modbus",
+    "--cov-report=term-missing",
+    "--cov-fail-under=100",
+]
+
+# Line coverage, like core: the copied tests are written to core's gate.
+[tool.coverage.run]
+source = ["custom_components/intesis_modbus"]
+
+[tool.mypy]
+strict = true
+warn_return_any = true
+warn_unreachable = true

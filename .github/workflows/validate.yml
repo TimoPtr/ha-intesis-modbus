@@ -1,0 +1,71 @@
+---
+name: Validate the integration
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read  # every job only reads the checkout
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: HACS validation
+        uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa  # main
+        with:
+          category: integration
+
+      - uses: home-assistant/actions/hassfest@50baf3a307f87100cf550d4ae127746595030d5d  # master
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.15"
+
+      - name: Install the linters
+        run: pip install ruff==0.17.3 yamllint==1.38.0
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format
+        run: ruff format --check .
+
+      - name: Yamllint
+        run: yamllint .
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.15"
+
+      - name: Install test dependencies
+        run: pip install ".[test]"
+
+      - name: Run tests
+        run: pytest tests/
+
+      - name: Type check
+        run: mypy custom_components/intesis_modbus/
