@@ -16,7 +16,7 @@ test = [
     "pymodbus==3.13.1",
     "aiousbwatcher==1.1.2",
     "serialx==1.15.1",
-    "aiohasupervisor==0.8.1",  # imported by usb through the supervisor helpers
+    "aiohasupervisor==0.10.0",  # imported by usb through the supervisor helpers
     "pytest-cov==7.1.0",
     "mypy==2.4.1",
     "ruff==0.17.3",
