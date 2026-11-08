@@ -13,7 +13,7 @@ test = [
     # pinned to what Home Assistant 2026.11.0 ships.
     "modbus-connection[tmodbus]==4.12.7",
     "tmodbus==1.1.0",
-    "pymodbus==3.13.1",
+    "pymodbus==3.16.2",
     "aiousbwatcher==1.1.2",
     "serialx==1.15.1",
     "aiohasupervisor==0.8.1",  # imported by usb through the supervisor helpers
