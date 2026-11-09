@@ -45,6 +45,7 @@ BUTTONS: Final[tuple[IntesisButtonDescription[IntesisSingleUnitGateway], ...]] =
         translation_key="reset_error",
         report_name="control",
         device_class=ButtonDeviceClass.RESTART,
+        entity_category=EntityCategory.DIAGNOSTIC,
         press_fn=lambda d: d.async_reset_error(),
     ),
     IntesisButtonDescription(
@@ -65,6 +66,7 @@ INDOOR_UNIT_BUTTONS: Final[tuple[IntesisButtonDescription[IndoorUnitView], ...]]
         report_name="units",
         families=MULTI_UNIT_ONLY,
         device_class=ButtonDeviceClass.RESTART,
+        entity_category=EntityCategory.DIAGNOSTIC,
         press_fn=lambda u: u.async_reset_filter(),
     ),
     IntesisButtonDescription(
@@ -73,6 +75,7 @@ INDOOR_UNIT_BUTTONS: Final[tuple[IntesisButtonDescription[IndoorUnitView], ...]]
         report_name="units",
         families=MULTI_UNIT_ONLY,
         device_class=ButtonDeviceClass.RESTART,
+        entity_category=EntityCategory.DIAGNOSTIC,
         press_fn=lambda u: u.async_reset_error(),
     ),
 )
