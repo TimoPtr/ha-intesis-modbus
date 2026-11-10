@@ -158,7 +158,14 @@ async def test_multi_unit_climate(
     attrs = state.attributes
     assert attrs[ATTR_HVAC_ACTION] == HVACAction.HEATING
     assert attrs["fan_modes"] == ["low", "medium", "high", "powerful"]
-    assert attrs["hvac_modes"] == ["off", "cool", "heat", "fan_only", "auto", "dry"]
+    assert attrs["hvac_modes"] == [
+        "off",
+        "cool",
+        "heat",
+        "fan_only",
+        "heat_cool",
+        "dry",
+    ]
     assert attrs["min_temp"] == 16
     assert attrs["max_temp"] == 30
     assert attrs["target_temp_step"] == 1
@@ -236,6 +243,7 @@ async def test_multi_unit_writes(
     assert [(w.address, w.values[0]) for w in writes] == [
         (143, 24),
         (142, 0),
+        (141, 1),
         (151, 1),
         (145, 0),
     ]

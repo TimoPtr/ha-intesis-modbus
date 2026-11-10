@@ -2,7 +2,6 @@
 """Config flow for the Intesis Modbus integration."""
 
 import logging
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, override
 
 import probatio
@@ -26,15 +25,16 @@ from homeassistant.helpers.selector import (
     TextSelector,
 )
 from intesis_gw_modbus import (
-    KNOWN_DEVICE_IDS,
     MODELS,
     GatewayFamily,
     GatewayModel,
+    GatewayProbe,
     TemperatureFormat,
-    detect_temperature_format,
-    model_for_device_id,
+    async_probe_gateway,
 )
-from modbus_connection import ModbusError, ModbusExceptionError, ModbusUnit
+from modbus_connection import (
+    ModbusError,
+)
 
 from .const import (
     CONF_BAUDRATE,
@@ -65,9 +65,13 @@ STEP_FEATURES = "features"
 STEP_RECONFIGURE_SERIAL = "reconfigure_serial"
 STEP_RECONFIGURE_TCP = "reconfigure_tcp"
 
-DEVICE_ID_REGISTER = 49
-SETPOINT_REGISTER = 4
-VANE_REGISTER = 3
+NO_PROBE = GatewayProbe(
+    device_id=None,
+    model=None,
+    unsupported_brand=None,
+    temperature_format=None,
+    vane_reported=False,
+)
 
 UNIT_ID_SELECTOR = probatio.All(
     NumberSelector(NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=1, max=247)),
@@ -137,32 +141,11 @@ STEP_FEATURES_DATA_SCHEMA = probatio.Schema(
 )
 
 
-@dataclass(frozen=True)
-class ProbeResult:
-    """What a gateway answered when asked who it is."""
-
-    device_id: int | None
-    raw_setpoint: int | None
-    raw_vane: int | None
-
-
-async def _async_read_or_none(unit: ModbusUnit, address: int) -> int | None:
-    """Read one holding register, or None if the gateway refuses the address."""
-    try:
-        [value] = await unit.read_holding_registers(address, 1)
-    except ModbusExceptionError:
-        return None
-    return value
-
-
-async def _async_probe(hass: HomeAssistant, data: dict[str, Any]) -> ProbeResult:
-    """Ask the gateway for its device id and raw setpoint, or raise."""
+async def _async_probe(hass: HomeAssistant, data: dict[str, Any]) -> GatewayProbe:
+    """Ask the gateway behind the link who it is, or raise."""
     params = create_modbus_params(data)
     async with async_get_temporary_unit(hass, params, data[CONF_UNIT_ID]) as unit:
-        device_id = await _async_read_or_none(unit, DEVICE_ID_REGISTER)
-        raw_setpoint = await _async_read_or_none(unit, SETPOINT_REGISTER)
-        raw_vane = await _async_read_or_none(unit, VANE_REGISTER)
-    return ProbeResult(device_id, raw_setpoint, raw_vane)
+        return await async_probe_gateway(unit)
 
 
 class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -173,7 +156,7 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialize the flow."""
         self._link: dict[str, Any] = {}
-        self._probe = ProbeResult(None, None, None)
+        self._probe = NO_PROBE
         self._pending: dict[str, Any] = {}
         self._model: GatewayModel | None = None
 
@@ -237,7 +220,6 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Ask for the link settings, then probe the gateway behind them."""
         errors: dict[str, str] = {}
-        description_placeholders: dict[str, str] = {}
         if user_input is not None:
             self._link = {CONF_TYPE: connection_type, **user_input}
             if self.source != SOURCE_RECONFIGURE:
@@ -245,18 +227,17 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
             try:
                 self._probe = await _async_probe(self.hass, self._link)
-            except (ModbusError, HomeAssistantError) as err:
+            except HomeAssistantError:
+                errors["base"] = "device_in_use"
+            except ModbusError:
                 errors["base"] = "cannot_connect"
-                description_placeholders["error"] = str(err)
             else:
-                if (
-                    brand := KNOWN_DEVICE_IDS.get(self._probe.device_id or -1)
-                ) is not None:
+                if (brand := self._probe.unsupported_brand) is not None:
                     return self.async_abort(
                         reason="unsupported_brand",
                         description_placeholders={"brand": brand},
                     )
-                if (model := model_for_device_id(self._probe.device_id or -1)) is None:
+                if (model := self._probe.model) is None:
                     return await self.async_step_model()
                 return await self._async_finish(model)
 
@@ -271,7 +252,6 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(schema, suggested),
             errors=errors,
-            description_placeholders=description_placeholders,
         )
 
     async def async_step_model(
@@ -313,7 +293,7 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
         Confirm what the unit behind the gateway can do.
 
         The gateway has no capability register for the vane, so the probe's
-        reading of register 3 only pre-fills the answer.
+        hint only pre-fills the answer.
         """
         if user_input is not None:
             return self._async_create_or_update(
@@ -322,9 +302,7 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
         if self.source == SOURCE_RECONFIGURE:
             has_vane = self._get_reconfigure_entry().data.get(CONF_HAS_VANE, True)
         else:
-            if TYPE_CHECKING:
-                assert self._model is not None
-            has_vane = self._probe.raw_vane in self._model.brand.vane_positions
+            has_vane = self._probe.vane_reported
         return self.async_show_form(
             step_id=STEP_FEATURES,
             data_schema=self.add_suggested_values_to_schema(
@@ -339,7 +317,7 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
             return self._async_create_or_update(data)
         self._model = model
         self._pending = data
-        fmt = detect_temperature_format(self._probe.raw_setpoint)
+        fmt = self._probe.temperature_format
         if fmt is None:
             return await self.async_step_temperature_format()
         data[CONF_TEMPERATURE_FORMAT] = fmt.value

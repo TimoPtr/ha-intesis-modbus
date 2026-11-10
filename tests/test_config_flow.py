@@ -17,6 +17,7 @@ from modbus_connection import (
     ModbusSerialParams,
     ModbusTcpParams,
     ModbusTimeoutError,
+    ServerDeviceBusyError,
 )
 from modbus_connection.mock import MockModbusConnection, MockModbusUnit
 from pytest_homeassistant.common import MockConfigEntry, get_schema_suggested_value
@@ -255,6 +256,25 @@ async def test_vane_at_init_value_defaults_to_no_vane(
     assert result["data"][CONF_HAS_VANE] is False
 
 
+async def test_busy_gateway_can_be_retried(
+    hass: HomeAssistant, mock_setup_entry: AsyncMock
+) -> None:
+    """A gateway that answers busy is a connection error, not another device."""
+    connection = _seeded()
+    connection.for_unit(1).fail_read(49, ServerDeviceBusyError())
+    with _patch_temporary_unit(connection):
+        flow_id = await _start_serial(hass)
+        result = await hass.config_entries.flow.async_configure(
+            flow_id, MOCK_SERIAL_INPUT
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["errors"] == {"base": "cannot_connect"}
+        connection.for_unit(1).fail_read(49, None)
+        await hass.config_entries.flow.async_configure(flow_id, MOCK_SERIAL_INPUT)
+        result = await _finish_features(hass, flow_id)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+
 async def test_cannot_connect(hass: HomeAssistant, mock_setup_entry: AsyncMock) -> None:
     """A silent gateway shows cannot_connect and the flow can be retried."""
     connection = _seeded()
@@ -285,7 +305,7 @@ async def test_serial_port_in_use_with_other_settings(
             flow_id, MOCK_SERIAL_INPUT
         )
     assert result["type"] is FlowResultType.FORM
-    assert result["errors"] == {"base": "cannot_connect"}
+    assert result["errors"] == {"base": "device_in_use"}
     with _patch_temporary_unit(_seeded()):
         await hass.config_entries.flow.async_configure(flow_id, MOCK_SERIAL_INPUT)
         result = await _finish_features(hass, flow_id)

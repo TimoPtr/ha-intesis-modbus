@@ -108,12 +108,10 @@ class IntesisEntity(CoordinatorEntity[IntesisCoordinator]):
             raise ServiceValidationError(
                 translation_domain=DOMAIN,
                 translation_key="unsupported_value",
-                translation_placeholders={"error": str(err)},
             ) from err
         except ModbusError as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="write_failed",
-                translation_placeholders={"error": str(err)},
             ) from err
         await self.coordinator.async_request_refresh()
