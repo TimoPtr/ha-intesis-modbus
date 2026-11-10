@@ -8,7 +8,7 @@ dependencies = ["intesis-gw-modbus==0.1.0"]
 test = [
     # Home Assistant's own test harness; its release pins the matching
     # homeassistant version, so keep it in step with hacs.json.
-    "pytest-homeassistant==2026.11.0b6",
+    "pytest-homeassistant==2026.11.1",
     # Requirements of the core integrations this one depends on (modbus, usb),
     # pinned to what Home Assistant 2026.11.0 ships.
     "modbus-connection[tmodbus]==4.12.7",
