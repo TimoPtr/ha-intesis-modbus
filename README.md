@@ -48,6 +48,12 @@ Click the badge above to open your Home Assistant instance with this repository 
 
 Copy the `custom_components/intesis_modbus` folder into your Home Assistant `config/custom_components/` directory and restart.
 
+## Wiring
+
+A single-unit gateway speaks Modbus RTU over its EIA-485 port. Wire it to an RS-485 adapter on the Home Assistant host, or to a serial server on the network that forwards the line byte for byte. Prefer the adapter's stable path under `/dev/serial/by-id/` over `/dev/ttyUSBx`, which can change after a reboot.
+
+A multi-unit gateway has both an RS-485 port and an Ethernet port; use whichever is wired.
+
 ## Before you start: DIP switches (single-unit gateways)
 
 The gateway's DIP switches set how it talks on the bus. Note them before setting up the integration; every change needs a power cycle of the gateway.
@@ -57,8 +63,6 @@ The gateway's DIP switches set how it talks on the bus. Note them before setting
 - **Temperature format** (SW4): degrees Celsius, tenths of a degree Celsius, or degrees Fahrenheit. The integration detects it from the gateway's setpoint register and only asks when the gateway is still starting up. Home Assistant always shows and accepts degrees Celsius whatever the switch says.
 - **Termination resistor** (SW4): enable it when the gateway is at the end of the RS-485 bus.
 - **XY bus role** (SW1; factory default slave): whether the gateway is the master or a slave on the air conditioner's own XY bus. As a slave it needs a Mitsubishi Heavy Industries wired remote controller on the bus acting as master. As a master it needs none, and any remote controller present must itself be set as slave. Exactly one device on the XY bus must be the master. The role does not change how the integration is set up, but it changes what the *External temperature reference* does: as master the value is applied to the indoor unit directly, as slave the gateway shifts the setpoint to compensate, so the wall remote can show a different setpoint than Home Assistant.
-
-Prefer the adapter's stable path under `/dev/serial/by-id/` over `/dev/ttyUSBx`, which can change after a reboot.
 
 ## Configuration
 
@@ -113,6 +117,33 @@ Single-unit gateways: reset error. Disabled by default: reset gateway. Indoor un
 The integration polls the gateway every 15 seconds, one request per documented register block. After a command it refreshes right away. If the gateway stops answering, its entities become unavailable and come back on the next successful poll.
 
 On a multi-unit gateway, indoor units the gateway starts talking to after setup are found automatically: each poll also checks a few empty unit slots, so a unit that was off at startup appears with its own device within a few minutes. A unit the gateway stops talking to keeps its device and shows as unavailable.
+
+## Use cases
+
+- Control a Mitsubishi Heavy Industries indoor unit from Home Assistant without the manufacturer's cloud or a wall remote.
+- Regulate on a room sensor of your choice: feed its reading to the *External temperature reference* number and the unit regulates on it instead of its own intake sensor.
+- Let the gateway switch the unit off when a window opens: mirror your window sensor onto the *Window contact* switch and the gateway counts down the *Open window timeout* by itself.
+
+## Example
+
+Keep the unit regulating on a separate temperature sensor:
+
+```yaml
+automation:
+  - alias: "Living room AC regulates on the room sensor"
+    triggers:
+      - trigger: state
+        entity_id: sensor.living_room_temperature
+        not_to:
+          - unavailable
+          - unknown
+    actions:
+      - action: number.set_value
+        target:
+          entity_id: number.inmbsmhi001r000_external_temperature_reference
+        data:
+          value: "{{ states('sensor.living_room_temperature') | float | round(1) }}"
+```
 
 ## Known limitations
 
