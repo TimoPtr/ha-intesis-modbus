@@ -34,7 +34,12 @@ from intesis_gw_modbus import (
     detect_temperature_format,
     model_for_device_id,
 )
-from modbus_connection import ModbusError, ModbusExceptionError, ModbusUnit
+from modbus_connection import (
+    IllegalDataAddressError,
+    IllegalFunctionError,
+    ModbusError,
+    ModbusUnit,
+)
 
 from .const import (
     CONF_BAUDRATE,
@@ -147,10 +152,10 @@ class ProbeResult:
 
 
 async def _async_read_or_none(unit: ModbusUnit, address: int) -> int | None:
-    """Read one holding register, or None if the gateway refuses the address."""
+    """Read one holding register, or None if the gateway does not have it."""
     try:
         [value] = await unit.read_holding_registers(address, 1)
-    except ModbusExceptionError:
+    except IllegalDataAddressError, IllegalFunctionError:
         return None
     return value
 
@@ -237,7 +242,6 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Ask for the link settings, then probe the gateway behind them."""
         errors: dict[str, str] = {}
-        description_placeholders: dict[str, str] = {}
         if user_input is not None:
             self._link = {CONF_TYPE: connection_type, **user_input}
             if self.source != SOURCE_RECONFIGURE:
@@ -245,9 +249,10 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
             try:
                 self._probe = await _async_probe(self.hass, self._link)
-            except (ModbusError, HomeAssistantError) as err:
+            except HomeAssistantError:
+                errors["base"] = "device_in_use"
+            except ModbusError:
                 errors["base"] = "cannot_connect"
-                description_placeholders["error"] = str(err)
             else:
                 if (
                     brand := KNOWN_DEVICE_IDS.get(self._probe.device_id or -1)
@@ -271,7 +276,6 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(schema, suggested),
             errors=errors,
-            description_placeholders=description_placeholders,
         )
 
     async def async_step_model(

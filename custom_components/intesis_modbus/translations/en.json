@@ -6,7 +6,8 @@
             "wrong_device": "The gateway at the new address is not the same model as the one this entry was set up with. Set it up as a new entry instead."
         },
         "error": {
-            "cannot_connect": "Failed to connect: {error}",
+            "cannot_connect": "Failed to connect",
+            "device_in_use": "This serial port or host is already in use with other settings. Use the same settings as the other devices on this line.",
             "wrong_model": "The gateway answered with a device ID that does not belong to this model. Pick the model that matches the label on the gateway."
         },
         "step": {
@@ -265,10 +266,10 @@
             "message": "The gateway lists no indoor unit yet. It is probably still starting up."
         },
         "unsupported_value": {
-            "message": "This unit does not support that value: {error}"
+            "message": "This unit does not support that value."
         },
         "write_failed": {
-            "message": "The gateway did not accept the command: {error}"
+            "message": "The gateway did not accept the command."
         },
         "wrong_model": {
             "message": "The gateway on this port reports another device ID than the model this entry was set up as. Reconfigure the entry with the right model."

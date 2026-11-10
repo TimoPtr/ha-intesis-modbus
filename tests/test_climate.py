@@ -90,7 +90,14 @@ async def test_climate_state(
     assert attrs["max_temp"] == 30
     assert attrs["target_temp_step"] == 0.5
     assert attrs["fan_modes"] == ["auto", "low", "medium", "high", "powerful"]
-    assert attrs["hvac_modes"] == ["off", "auto", "heat", "dry", "fan_only", "cool"]
+    assert attrs["hvac_modes"] == [
+        "off",
+        "heat_cool",
+        "heat",
+        "dry",
+        "fan_only",
+        "cool",
+    ]
     assert attrs["swing_modes"] == [
         "position_1",
         "position_2",
@@ -189,7 +196,7 @@ async def test_set_hvac_mode_heat_while_on(
     init_integration: MockConfigEntry,
     mock_connection: MockModbusConnection,
 ) -> None:
-    """A mode change on a running unit does not rewrite the power register."""
+    """A mode change always writes power on, as the cached power can be stale."""
     writes: list[WriteEvent] = []
     mock_connection.for_unit(1).on_write(writes.append)
     await hass.services.async_call(
@@ -198,7 +205,37 @@ async def test_set_hvac_mode_heat_while_on(
         {ATTR_ENTITY_ID: ENTITY_ID, ATTR_HVAC_MODE: HVACMode.DRY},
         blocking=True,
     )
-    assert [(w.address, w.values[0]) for w in writes] == [(1, 2)]
+    assert [(w.address, w.values[0]) for w in writes] == [(1, 2), (0, 1)]
+
+
+async def test_set_temperature_with_hvac_mode(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_get_unit: MagicMock,
+    mock_connection: MockModbusConnection,
+) -> None:
+    """A temperature sent together with a mode applies both on a unit that is off."""
+    unit = mock_connection.for_unit(1)
+    unit.holding[0] = 0
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    writes: list[WriteEvent] = []
+    unit.on_write(writes.append)
+    await hass.services.async_call(
+        CLIMATE_DOMAIN,
+        SERVICE_SET_TEMPERATURE,
+        {
+            ATTR_ENTITY_ID: ENTITY_ID,
+            ATTR_TEMPERATURE: 22,
+            ATTR_HVAC_MODE: HVACMode.HEAT_COOL,
+        },
+        blocking=True,
+    )
+    assert [(w.address, w.values[0]) for w in writes] == [(1, 0), (0, 1), (4, 220)]
+    state = hass.states.get(ENTITY_ID)
+    assert state.state == HVACMode.HEAT_COOL
+    assert state.attributes["temperature"] == 22
 
 
 async def test_set_temperature_fan_swing(
