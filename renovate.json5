@@ -7,4 +7,19 @@
         'group:monorepos',
         'group:recommended',
     ],
+    packageRules: [
+        {
+            // Pinned to what the Home Assistant release in the test extra ships;
+            // they move only with the pytest-homeassistant bump.
+            matchPackageNames: [
+                'aiohasupervisor',
+                'aiousbwatcher',
+                'modbus-connection',
+                'pymodbus',
+                'serialx',
+                'tmodbus',
+            ],
+            enabled: false,
+        },
+    ],
 }
