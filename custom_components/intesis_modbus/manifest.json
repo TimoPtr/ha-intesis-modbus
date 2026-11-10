@@ -25,7 +25,7 @@
   ],
   "quality_scale": "platinum",
   "requirements": [
-    "intesis-gw-modbus==0.1.0"
+    "intesis-gw-modbus==0.2.0"
   ],
   "version": "0.1.0"
 }
