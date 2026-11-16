@@ -50,6 +50,7 @@
         '98': 0,
       }),
     }),
+    'state': 'loaded',
     'updated': list([
       'control',
       'diagnostics',
