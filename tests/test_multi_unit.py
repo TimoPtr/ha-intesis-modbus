@@ -67,7 +67,7 @@ def mock_multi_entry() -> MockConfigEntry:
     return MockConfigEntry(
         domain=DOMAIN,
         entry_id=ENTRY_ID,
-        unique_id="192.168.1.50:502:1",
+        minor_version=2,
         data=MOCK_MULTI_ENTRY_DATA,
         title="INMBSMHI048O000",
     )

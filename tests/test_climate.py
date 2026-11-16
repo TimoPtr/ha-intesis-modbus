@@ -434,8 +434,9 @@ async def test_unit_without_vane_has_no_swing(
     entry = MockConfigEntry(
         domain=DOMAIN,
         entry_id="01JTESTINTESISNOVANE000000",
-        unique_id="/dev/ttyUSB0:1",
-        data={**MOCK_SERIAL_ENTRY_DATA, CONF_HAS_VANE: False},
+        minor_version=2,
+        data=MOCK_SERIAL_ENTRY_DATA,
+        options={CONF_HAS_VANE: False},
         title="INMBSMHI001R000",
     )
     entry.add_to_hass(hass)

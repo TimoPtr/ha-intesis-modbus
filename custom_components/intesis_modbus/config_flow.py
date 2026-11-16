@@ -29,7 +29,6 @@ from intesis_gw_modbus import (
     GatewayFamily,
     GatewayModel,
     GatewayProbe,
-    TemperatureFormat,
     async_probe_gateway,
 )
 from modbus_connection import (
@@ -52,7 +51,7 @@ from .const import (
     TYPE_SERIAL,
     TYPE_TCP,
 )
-from .helpers import create_modbus_params, unique_id_for
+from .helpers import create_modbus_params, link_match
 
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
@@ -60,7 +59,6 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 STEP_MODEL = "model"
-STEP_TEMPERATURE_FORMAT = "temperature_format"
 STEP_FEATURES = "features"
 STEP_RECONFIGURE_SERIAL = "reconfigure_serial"
 STEP_RECONFIGURE_TCP = "reconfigure_tcp"
@@ -121,21 +119,6 @@ STEP_MODEL_DATA_SCHEMA = probatio.Schema(
     }
 )
 
-STEP_TEMPERATURE_FORMAT_DATA_SCHEMA = probatio.Schema(
-    {
-        probatio.Required(
-            CONF_TEMPERATURE_FORMAT, default=TemperatureFormat.DECICELSIUS.value
-        ): SelectSelector(
-            SelectSelectorConfig(
-                options=[fmt.value for fmt in TemperatureFormat],
-                translation_key="temperature_format",
-                mode=SelectSelectorMode.LIST,
-            )
-        ),
-    }
-)
-
-
 STEP_FEATURES_DATA_SCHEMA = probatio.Schema(
     {probatio.Required(CONF_HAS_VANE, default=True): BooleanSelector()}
 )
@@ -152,13 +135,14 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle an Intesis Modbus config flow."""
 
     VERSION = 1
+    MINOR_VERSION = 2
 
     def __init__(self) -> None:
         """Initialize the flow."""
         self._link: dict[str, Any] = {}
+        self._link_form: tuple[str, str, probatio.Schema] | None = None
         self._probe = NO_PROBE
         self._pending: dict[str, Any] = {}
-        self._model: GatewayModel | None = None
 
     @override
     async def async_step_user(
@@ -219,12 +203,12 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
         user_input: dict[str, Any] | None,
     ) -> ConfigFlowResult:
         """Ask for the link settings, then probe the gateway behind them."""
+        self._link_form = (step_id, connection_type, schema)
         errors: dict[str, str] = {}
         if user_input is not None:
             self._link = {CONF_TYPE: connection_type, **user_input}
             if self.source != SOURCE_RECONFIGURE:
-                await self.async_set_unique_id(unique_id_for(self._link))
-                self._abort_if_unique_id_configured()
+                self._async_abort_entries_match(link_match(self._link))
             try:
                 self._probe = await _async_probe(self.hass, self._link)
             except HomeAssistantError:
@@ -239,8 +223,19 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
                 if (model := self._probe.model) is None:
                     return await self.async_step_model()
-                return await self._async_finish(model)
+                if self._is_starting(model):
+                    errors["base"] = "gateway_starting"
+                else:
+                    return await self._async_finish(model)
+        return self._async_show_link_form(user_input, errors)
 
+    def _async_show_link_form(
+        self, user_input: dict[str, Any] | None, errors: dict[str, str]
+    ) -> ConfigFlowResult:
+        """Show the link form the user came through, with what they entered."""
+        if TYPE_CHECKING:
+            assert self._link_form is not None
+        step_id, connection_type, schema = self._link_form
         suggested = user_input
         if suggested is None and self.source == SOURCE_RECONFIGURE:
             entry = self._get_reconfigure_entry()
@@ -252,6 +247,18 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id=step_id,
             data_schema=self.add_suggested_values_to_schema(schema, suggested),
             errors=errors,
+        )
+
+    def _is_starting(self, model: GatewayModel) -> bool:
+        """
+        Whether a single-unit gateway reports no values yet.
+
+        Its temperature format is detected from the setpoint it reports, so it
+        cannot be set up until it does.
+        """
+        return (
+            model.family is GatewayFamily.SINGLE_UNIT
+            and self._probe.temperature_format is None
         )
 
     async def async_step_model(
@@ -268,22 +275,16 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
                 and model.brand.device_id != probed
             ):
                 errors["base"] = "wrong_model"
+            elif self._is_starting(model):
+                # Only the link step probes the gateway, so the retry starts there
+                return self._async_show_link_form(
+                    {k: v for k, v in self._link.items() if k != CONF_TYPE},
+                    {"base": "gateway_starting"},
+                )
             else:
                 return await self._async_finish(model)
         return self.async_show_form(
             step_id=STEP_MODEL, data_schema=STEP_MODEL_DATA_SCHEMA, errors=errors
-        )
-
-    async def async_step_temperature_format(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Ask for the DIP-switch temperature format when it cannot be detected."""
-        if user_input is not None:
-            self._pending[CONF_TEMPERATURE_FORMAT] = user_input[CONF_TEMPERATURE_FORMAT]
-            return await self.async_step_features()
-        return self.async_show_form(
-            step_id=STEP_TEMPERATURE_FORMAT,
-            data_schema=STEP_TEMPERATURE_FORMAT_DATA_SCHEMA,
         )
 
     async def async_step_features(
@@ -297,10 +298,10 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
         """
         if user_input is not None:
             return self._async_create_or_update(
-                {**self._pending, CONF_HAS_VANE: user_input[CONF_HAS_VANE]}
+                self._pending, {CONF_HAS_VANE: user_input[CONF_HAS_VANE]}
             )
         if self.source == SOURCE_RECONFIGURE:
-            has_vane = self._get_reconfigure_entry().data.get(CONF_HAS_VANE, True)
+            has_vane = self._get_reconfigure_entry().options.get(CONF_HAS_VANE, True)
         else:
             has_vane = self._probe.vane_reported
         return self.async_show_form(
@@ -311,30 +312,34 @@ class IntesisModbusConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def _async_finish(self, model: GatewayModel) -> ConfigFlowResult:
-        """Settle format and features for a single-unit gateway, then finish."""
+        """Finish a multi-unit gateway, or ask what a single unit can do."""
         data = {**self._link, CONF_MODEL: model.name}
         if model.family is not GatewayFamily.SINGLE_UNIT:
-            return self._async_create_or_update(data)
-        self._model = model
-        self._pending = data
+            return self._async_create_or_update(data, {})
         fmt = self._probe.temperature_format
-        if fmt is None:
-            return await self.async_step_temperature_format()
-        data[CONF_TEMPERATURE_FORMAT] = fmt.value
+        if TYPE_CHECKING:
+            assert fmt is not None
+        self._pending = {**data, CONF_TEMPERATURE_FORMAT: fmt.value}
         return await self.async_step_features()
 
-    def _async_create_or_update(self, data: dict[str, Any]) -> ConfigFlowResult:
+    def _async_create_or_update(
+        self, data: dict[str, Any], options: dict[str, Any]
+    ) -> ConfigFlowResult:
         """Create the entry, or update the one being reconfigured."""
         title = data[CONF_MODEL]
+        match = link_match(data)
         if self.source != SOURCE_RECONFIGURE:
-            return self.async_create_entry(title=title, data=data)
+            # Another flow for the same gateway may have finished meanwhile
+            self._async_abort_entries_match(match)
+            return self.async_create_entry(title=title, data=data, options=options)
         entry = self._get_reconfigure_entry()
         if data[CONF_MODEL] != entry.data[CONF_MODEL]:
             return self.async_abort(reason="wrong_device")
-        unique_id = unique_id_for(data)
         for other in self._async_current_entries():
-            if other.entry_id != entry.entry_id and other.unique_id == unique_id:
+            if other.entry_id != entry.entry_id and all(
+                other.data.get(key) == value for key, value in match.items()
+            ):
                 return self.async_abort(reason="already_configured")
         return self.async_update_reload_and_abort(
-            entry, data=data, unique_id=unique_id, title=title
+            entry, data=data, options=options, title=title
         )

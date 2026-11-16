@@ -7,7 +7,8 @@
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "device_in_use": "This serial port or host is already in use with other settings. Use the same settings as the other devices on this line.",
+      "device_in_use": "This serial port or host is already in use with other link settings. This gateway always uses 8 data bits, no parity and 2 stop bits, so the other devices on this line must use the same framing and baud rate.",
+      "gateway_starting": "The gateway is still starting up and does not report its values yet. Wait a few minutes and try again.",
       "wrong_model": "The gateway answered with a device ID that does not belong to this model. Pick the model that matches the label on the gateway."
     },
     "step": {
@@ -95,15 +96,6 @@
           "unit_id": "[%key:component::intesis_modbus::config::step::serial::data_description::unit_id%]"
         },
         "description": "Set up a gateway reached over the network, either a multi-unit gateway with an Ethernet port or a serial gateway behind a serial server."
-      },
-      "temperature_format": {
-        "data": {
-          "temperature_format": "Temperature format"
-        },
-        "data_description": {
-          "temperature_format": "How the gateway's SW4 DIP switches scale temperatures. It could not be detected, usually because the gateway is still starting up."
-        },
-        "description": "Pick the temperature format set on the gateway's SW4 DIP switches."
       },
       "user": {
         "description": "An Intesis gateway can be reached over a serial port (RS-485) or over the network.",
@@ -275,24 +267,11 @@
       "message": "The gateway on this port reports another device ID than the model this entry was set up as. Reconfigure the entry with the right model."
     }
   },
-  "issues": {
-    "temperature_format_changed": {
-      "description": "The gateway reports temperatures in another format than this entry was set up for. Someone probably changed its SW4 DIP switches. Reconfigure the gateway in Home Assistant, which detects the new format, or set the switches back and power-cycle the gateway.",
-      "title": "Temperature format changed"
-    }
-  },
   "selector": {
     "framing": {
       "options": {
         "rtu_over_tcp": "RTU over TCP (serial server)",
         "tcp": "[%key:component::modbus::common::modbus_tcp%]"
-      }
-    },
-    "temperature_format": {
-      "options": {
-        "celsius": "Degrees Celsius (x1)",
-        "decicelsius": "Tenths of a degree Celsius (x10)",
-        "fahrenheit": "Degrees Fahrenheit"
       }
     }
   }
