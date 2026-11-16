@@ -2,7 +2,7 @@
 """Tests for the Intesis Modbus integration setup."""
 
 from datetime import timedelta
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import ConfigEntryState
@@ -15,12 +15,13 @@ from modbus_connection.mock import MockModbusConnection
 from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.intesis_modbus.const import (
+    CONF_HAS_VANE,
     DOMAIN,
     MANUFACTURER,
     SCAN_INTERVAL,
 )
 
-from . import seed_initialising_single_unit
+from . import MOCK_MULTI_ENTRY_DATA, MOCK_SERIAL_ENTRY_DATA
 
 
 async def test_manifest_loads(hass: HomeAssistant) -> None:
@@ -81,56 +82,76 @@ async def _poll(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
     await hass.async_block_till_done(wait_background_tasks=True)
 
 
-async def test_format_drift_raises_repair_issue(
+async def test_temperature_format_follows_the_dip_switches(
     hass: HomeAssistant,
     freezer: FrozenDateTimeFactory,
     init_integration: MockConfigEntry,
     mock_connection: MockModbusConnection,
     issue_registry: ir.IssueRegistry,
 ) -> None:
-    """A flipped SW4 switch raises a repair issue, cleared once it matches again."""
-    issue_id = f"temperature_format_{init_integration.entry_id}"
-    assert issue_registry.async_get_issue(DOMAIN, issue_id) is None
+    """A gateway switched to whole degrees is read in whole degrees, unprompted."""
     unit = mock_connection.for_unit(1)
-    unit.holding[4] = 22  # the gateway now reports whole degrees
+    for address, value in {4: 22, 5: 20, 23: 22, 24: 30, 25: 16}.items():
+        unit.holding[address] = value
     await _poll(hass, freezer)
-    issue = issue_registry.async_get_issue(DOMAIN, issue_id)
-    assert issue is not None
-    assert issue.config_entry_id == init_integration.entry_id
-    assert issue.translation_placeholders is None
-    unit.holding[4] = 215
-    await _poll(hass, freezer)
-    assert issue_registry.async_get_issue(DOMAIN, issue_id) is None
-
-
-async def test_repair_issue_is_removed_with_the_entry(
-    hass: HomeAssistant,
-    freezer: FrozenDateTimeFactory,
-    init_integration: MockConfigEntry,
-    mock_connection: MockModbusConnection,
-    issue_registry: ir.IssueRegistry,
-) -> None:
-    """Deleting the entry takes its open repair issue with it."""
-    mock_connection.for_unit(1).holding[4] = 22
-    await _poll(hass, freezer)
-    issue_id = f"temperature_format_{init_integration.entry_id}"
-    assert issue_registry.async_get_issue(DOMAIN, issue_id) is not None
-    await hass.config_entries.async_remove(init_integration.entry_id)
-    await hass.async_block_till_done()
-    assert issue_registry.async_get_issue(DOMAIN, issue_id) is None
-
-
-async def test_initialising_does_not_raise_issue(
-    hass: HomeAssistant,
-    mock_config_entry: MockConfigEntry,
-    mock_get_unit: MagicMock,
-    mock_connection: MockModbusConnection,
-    issue_registry: ir.IssueRegistry,
-) -> None:
-    """While the format cannot be detected no issue is raised."""
-    seed_initialising_single_unit(mock_connection.for_unit(1))
-    mock_config_entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(mock_config_entry.entry_id)
-    await hass.async_block_till_done()
-    assert mock_config_entry.state is ConfigEntryState.LOADED
+    state = hass.states.get("climate.inmbsmhi001r000")
+    assert state is not None
+    assert state.attributes["temperature"] == 22
+    assert state.attributes["current_temperature"] == 20
+    assert state.attributes["target_temp_step"] == 1
     assert not issue_registry.issues
+
+
+async def test_entry_from_an_older_version_is_migrated(
+    hass: HomeAssistant,
+    mock_get_unit: MagicMock,
+) -> None:
+    """The vane moves to the options and the link settings stop being an id."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="/dev/ttyUSB0:1",
+        data={**MOCK_SERIAL_ENTRY_DATA, CONF_HAS_VANE: False},
+        title="INMBSMHI001R000",
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.minor_version == 2
+    assert entry.unique_id is None
+    assert entry.data == MOCK_SERIAL_ENTRY_DATA
+    assert entry.options == {CONF_HAS_VANE: False}
+    state = hass.states.get("climate.inmbsmhi001r000")
+    assert state is not None
+    assert "swing_modes" not in state.attributes
+
+
+async def test_multi_unit_entry_from_an_older_version_is_migrated(
+    hass: HomeAssistant,
+    mock_setup_entry: AsyncMock,
+) -> None:
+    """An entry that never had a vane setting gets no option."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="192.168.1.50:502:1",
+        data=MOCK_MULTI_ENTRY_DATA,
+        title="INMBSMHI048O000",
+    )
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    assert entry.minor_version == 2
+    assert entry.unique_id is None
+    assert entry.data == MOCK_MULTI_ENTRY_DATA
+    assert entry.options == {}
+
+
+async def test_entry_from_a_newer_version_is_not_set_up(
+    hass: HomeAssistant,
+    mock_setup_entry: AsyncMock,
+) -> None:
+    """Home Assistant does not set up an entry a newer version rewrote."""
+    entry = MockConfigEntry(domain=DOMAIN, version=2, data=MOCK_SERIAL_ENTRY_DATA)
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    assert entry.state is ConfigEntryState.MIGRATION_ERROR
+    assert mock_setup_entry.call_count == 0

@@ -9,7 +9,7 @@ from homeassistant.const import Platform
 from homeassistant.helpers import device_registry as dr
 from intesis_gw_modbus import MODELS, IntesisMultiUnitGateway
 
-from .const import CONF_MODEL, CONF_UNIT_ID, DOMAIN
+from .const import CONF_HAS_VANE, CONF_MODEL, CONF_UNIT_ID, DOMAIN
 from .coordinator import IntesisConfigEntry, IntesisCoordinator, IntesisRuntimeData
 from .helpers import create_device, create_modbus_params
 
@@ -43,6 +43,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: IntesisConfigEntry) -> N
         coordinator, device, MODELS[entry.data[CONF_MODEL]].family
     )
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: IntesisConfigEntry) -> bool:
+    """Bring an entry made by an older version up to date."""
+    if entry.minor_version < 2:  # noqa: PLR2004
+        # 1.2: the vane is an option, and the link settings are no unique id
+        data = dict(entry.data)
+        options = dict(entry.options)
+        if CONF_HAS_VANE in data:
+            options[CONF_HAS_VANE] = data.pop(CONF_HAS_VANE)
+        hass.config_entries.async_update_entry(
+            entry, data=data, options=options, unique_id=None, minor_version=2
+        )
+    return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: IntesisConfigEntry) -> None:

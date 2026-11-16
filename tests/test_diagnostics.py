@@ -56,6 +56,7 @@ async def test_diagnostics_of_entry_that_is_not_set_up(
     )
     assert result == {
         "entry": {**mock_config_entry.data, "device": "**REDACTED**"},
+        "options": {"has_vane": True},
         "state": "setup_retry",
         "family": None,
         "updated": None,

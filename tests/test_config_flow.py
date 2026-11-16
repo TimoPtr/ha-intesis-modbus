@@ -38,6 +38,7 @@ from custom_components.intesis_modbus.helpers import create_modbus_params
 from . import (
     MOCK_MULTI_ENTRY_DATA,
     MOCK_SERIAL_ENTRY_DATA,
+    MOCK_SERIAL_ENTRY_OPTIONS,
     MOCK_SERIAL_INPUT,
     MOCK_TCP_INPUT,
     seed_initialising_single_unit,
@@ -139,7 +140,8 @@ async def test_serial_auto_detects_mhi(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "INMBSMHI001R000"
     assert result["data"] == MOCK_SERIAL_ENTRY_DATA
-    assert result["result"].unique_id == "/dev/ttyUSB0:1"
+    assert result["options"] == MOCK_SERIAL_ENTRY_OPTIONS
+    assert result["result"].unique_id is None
     assert mock_setup_entry.call_count == 1
 
 
@@ -166,7 +168,7 @@ async def test_serial_unknown_device_id_asks_model(
         )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "INMBSMHI048O000"
-    assert result["result"].unique_id == "/dev/ttyUSB0:1"
+    assert result["options"] == {}
     assert CONF_TEMPERATURE_FORMAT not in result["data"]
     assert result["data"][CONF_MODEL] == "INMBSMHI048O000"
 
@@ -215,28 +217,56 @@ async def test_illegal_address_on_49_asks_model(
             flow_id, {CONF_MODEL: "INMBSMHI048O000"}
         )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["result"].unique_id == "/dev/ttyUSB0:1"
 
 
-async def test_initialising_gateway_asks_temperature_format(
+async def test_initialising_gateway_can_be_retried(
     hass: HomeAssistant, mock_setup_entry: AsyncMock
 ) -> None:
-    """With every register at the init value the format cannot be detected."""
-    with _patch_temporary_unit(_seeded(seed_initialising_single_unit)):
+    """A gateway that is still starting up is set up once it reports values."""
+    connection = _seeded(seed_initialising_single_unit)
+    with _patch_temporary_unit(connection):
         flow_id = await _start_serial(hass)
         result = await hass.config_entries.flow.async_configure(
             flow_id, MOCK_SERIAL_INPUT
         )
         assert result["type"] is FlowResultType.FORM
-        assert result["step_id"] == "temperature_format"
-        result = await hass.config_entries.flow.async_configure(
-            flow_id, {CONF_TEMPERATURE_FORMAT: "celsius"}
-        )
-        result = await _finish_features(hass, flow_id, expected_default=False)
+        assert result["step_id"] == TYPE_SERIAL
+        assert result["errors"] == {"base": "gateway_starting"}
+        seed_single_unit(connection.for_unit(1))
+        await hass.config_entries.flow.async_configure(flow_id, MOCK_SERIAL_INPUT)
+        result = await _finish_features(hass, flow_id)
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["result"].unique_id == "/dev/ttyUSB0:1"
-    assert result["data"][CONF_TEMPERATURE_FORMAT] == "celsius"
-    assert result["data"][CONF_HAS_VANE] is True
+    assert result["data"] == MOCK_SERIAL_ENTRY_DATA
+
+
+async def test_initialising_gateway_picked_by_hand_restarts_at_the_link(
+    hass: HomeAssistant, mock_setup_entry: AsyncMock
+) -> None:
+    """A single-unit model picked for a gateway with no values probes again."""
+    connection = _seeded(seed_initialising_single_unit)
+    connection.for_unit(1).fail_read(49, IllegalDataAddressError())
+    with _patch_temporary_unit(connection):
+        flow_id = await _start_serial(hass)
+        result = await hass.config_entries.flow.async_configure(
+            flow_id, MOCK_SERIAL_INPUT
+        )
+        assert result["step_id"] == "model"
+        result = await hass.config_entries.flow.async_configure(
+            flow_id, {CONF_MODEL: "INMBSMHI001R000"}
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == TYPE_SERIAL
+        assert result["errors"] == {"base": "gateway_starting"}
+        assert (
+            get_schema_suggested_value(result["data_schema"].schema, CONF_DEVICE)
+            == "/dev/ttyUSB0"
+        )
+        connection.for_unit(1).fail_read(49, None)
+        seed_single_unit(connection.for_unit(1))
+        await hass.config_entries.flow.async_configure(flow_id, MOCK_SERIAL_INPUT)
+        result = await _finish_features(hass, flow_id)
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == MOCK_SERIAL_ENTRY_DATA
 
 
 async def test_vane_at_init_value_defaults_to_no_vane(
@@ -252,8 +282,7 @@ async def test_vane_at_init_value_defaults_to_no_vane(
             hass, flow_id, expected_default=False, has_vane=False
         )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["result"].unique_id == "/dev/ttyUSB0:1"
-    assert result["data"][CONF_HAS_VANE] is False
+    assert result["options"] == {CONF_HAS_VANE: False}
 
 
 async def test_busy_gateway_can_be_retried(
@@ -290,7 +319,6 @@ async def test_cannot_connect(hass: HomeAssistant, mock_setup_entry: AsyncMock) 
         await hass.config_entries.flow.async_configure(flow_id, MOCK_SERIAL_INPUT)
         result = await _finish_features(hass, flow_id)
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["result"].unique_id == "/dev/ttyUSB0:1"
 
 
 async def test_serial_port_in_use_with_other_settings(
@@ -310,7 +338,6 @@ async def test_serial_port_in_use_with_other_settings(
         await hass.config_entries.flow.async_configure(flow_id, MOCK_SERIAL_INPUT)
         result = await _finish_features(hass, flow_id)
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["result"].unique_id == "/dev/ttyUSB0:1"
 
 
 async def test_tcp_rtu_over_tcp(
@@ -327,7 +354,6 @@ async def test_tcp_rtu_over_tcp(
         await hass.config_entries.flow.async_configure(flow_id, user_input)
         result = await _finish_features(hass, flow_id)
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["result"].unique_id == "192.168.1.50:502:1"
     assert result["data"][CONF_MODEL] == "INMBSMHI001R000"
     assert create_modbus_params(result["data"]) == ModbusSerialParams(
         device="socket://192.168.1.50:502",
@@ -350,7 +376,6 @@ async def test_tcp_multi_unit(hass: HomeAssistant, mock_setup_entry: AsyncMock) 
             flow_id, {CONF_MODEL: "INMBSMHI048O000"}
         )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["result"].unique_id == "192.168.1.50:502:1"
     assert create_modbus_params(result["data"]) == ModbusTcpParams(
         host="192.168.1.50", port=502
     )
@@ -370,10 +395,44 @@ async def test_duplicate_aborts(
     assert result["reason"] == "already_configured"
 
 
+async def test_overlapping_flows_create_one_entry(
+    hass: HomeAssistant, mock_setup_entry: AsyncMock
+) -> None:
+    """Two flows for the same gateway cannot both finish."""
+    with _patch_temporary_unit(_seeded()):
+        first = await _start_serial(hass)
+        await hass.config_entries.flow.async_configure(first, MOCK_SERIAL_INPUT)
+        second = await _start_serial(hass)
+        await hass.config_entries.flow.async_configure(second, MOCK_SERIAL_INPUT)
+        result = await _finish_features(hass, first)
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        result = await hass.config_entries.flow.async_configure(
+            second, {CONF_HAS_VANE: True}
+        )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+async def test_tcp_duplicate_aborts(
+    hass: HomeAssistant, mock_setup_entry: AsyncMock
+) -> None:
+    """The same host, port and unit id cannot be set up twice."""
+    MockConfigEntry(
+        domain=DOMAIN, minor_version=2, data=MOCK_MULTI_ENTRY_DATA
+    ).add_to_hass(hass)
+    with _patch_temporary_unit(_seeded(seed_multi_unit, present=(0,))):
+        flow_id = await _start_tcp(hass)
+        result = await hass.config_entries.flow.async_configure(
+            flow_id, {**MOCK_TCP_INPUT, CONF_BAUDRATE: 9600}
+        )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
 async def test_reconfigure_changes_port(
     hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_setup_entry: AsyncMock
 ) -> None:
-    """Reconfiguring onto another port updates the entry and its unique id."""
+    """Reconfiguring onto another port updates the entry and its vane option."""
     mock_config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     with _patch_temporary_unit(_seeded()):
@@ -389,10 +448,11 @@ async def test_reconfigure_changes_port(
         result = await _finish_features(hass, result["flow_id"], has_vane=False)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
-    assert mock_config_entry.unique_id == "/dev/ttyUSB1:1"
-    assert mock_config_entry.data[CONF_DEVICE] == "/dev/ttyUSB1"
-    assert mock_config_entry.data[CONF_MODEL] == "INMBSMHI001R000"
-    assert mock_config_entry.data[CONF_HAS_VANE] is False
+    assert mock_config_entry.data == {
+        **MOCK_SERIAL_ENTRY_DATA,
+        CONF_DEVICE: "/dev/ttyUSB1",
+    }
+    assert mock_config_entry.options == {CONF_HAS_VANE: False}
 
 
 async def test_reconfigure_to_other_entry_port_aborts(
@@ -402,7 +462,7 @@ async def test_reconfigure_to_other_entry_port_aborts(
     mock_config_entry.add_to_hass(hass)
     other = MockConfigEntry(
         domain=DOMAIN,
-        unique_id="/dev/ttyUSB1:1",
+        minor_version=2,
         data={**MOCK_SERIAL_ENTRY_DATA, CONF_DEVICE: "/dev/ttyUSB1"},
         title="INMBSMHI001R000",
     )
@@ -444,7 +504,6 @@ async def test_reconfigure_tcp_recovers_from_cannot_connect(
         result = await _finish_features(hass, result["flow_id"])
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
-    assert mock_config_entry.unique_id == "192.168.1.50:502:1"
     assert mock_config_entry.data[CONF_TYPE] == TYPE_TCP
 
 

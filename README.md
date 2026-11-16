@@ -60,7 +60,7 @@ The gateway's DIP switches set how it talks on the bus. Note them before setting
 
 - **Modbus slave address** (SW3, 1 to 63; factory default 1): the *Modbus unit ID* the integration asks for.
 - **Baud rate** (SW3/SW4; factory default 9600): the *baud rate* the integration asks for. The gateway always uses 8 data bits, no parity and 2 stop bits.
-- **Temperature format** (SW4): degrees Celsius, tenths of a degree Celsius, or degrees Fahrenheit. The integration detects it from the gateway's setpoint register and only asks when the gateway is still starting up. Home Assistant always shows and accepts degrees Celsius whatever the switch says.
+- **Temperature format** (SW4): degrees Celsius, tenths of a degree Celsius, or degrees Fahrenheit. The integration detects it from the gateway's setpoint register and follows it, also when the switches change later. Home Assistant always shows and accepts degrees Celsius whatever the switch says.
 - **Termination resistor** (SW4): enable it when the gateway is at the end of the RS-485 bus.
 - **XY bus role** (SW1; factory default slave): whether the gateway is the master or a slave on the air conditioner's own XY bus. As a slave it needs a Mitsubishi Heavy Industries wired remote controller on the bus acting as master. As a master it needs none, and any remote controller present must itself be set as slave. Exactly one device on the XY bus must be the master. The role does not change how the integration is set up, but it changes what the *External temperature reference* does: as master the value is applied to the indoor unit directly, as slave the gateway shifts the setpoint to compensate, so the wall remote can show a different setpoint than Home Assistant.
 
@@ -79,10 +79,9 @@ The gateway's DIP switches set how it talks on the bus. Note them before setting
 | **Host**, **Port** | For a gateway reached over the network, its address and TCP port (502 by default). |
 | **Framing** | *Modbus TCP* for a multi-unit gateway with an Ethernet port. *RTU over TCP* for a single-unit gateway behind a serial server. |
 | **Gateway model** | Only asked when the gateway does not identify itself, which is the case for multi-unit gateways. |
-| **Temperature format** | Only asked when it could not be detected, usually because the gateway was still initialising. Pick the format set on the SW4 DIP switches. |
 | **Unit has a swing vane** | Single-unit gateways only. Pre-filled from the last vane position the gateway reported; turn it off for a unit without a motorised vane and the climate entity will not offer swing modes. |
 
-The integration has no options. The gateway is polled every 15 seconds.
+A gateway that is still starting up cannot be set up: the form says so, and submitting it again a few minutes later works. The integration has no options. The gateway is polled every 15 seconds.
 
 ## Entities
 
@@ -161,7 +160,7 @@ automation:
 - **Every value is unknown right after setup** — The gateway initialises for about two minutes after power-up and reports no values meanwhile; the *Error* sensor shows *Initialising*. Wait, nothing to fix.
 - **The Error sensor shows a communication error with the unit** — The gateway answers on Modbus but cannot talk to the indoor unit. Check the XY bus wiring, then the bus roles: exactly one device must be the master. A gateway set as slave (SW1, the factory default) with no wall remote, or with a wall remote that is also a slave, has no master to talk to; a gateway and a remote both set as master collide.
 - **Timeouts or unavailable entities** — Check the RS-485 wiring (A/B polarity), the termination resistor at the ends of the bus, the baud rate against the DIP switches, and that the gateway's address matches the unit ID. The gateway uses 2 stop bits; some adapters need that set explicitly.
-- **A repair issue says the temperature format changed** — Someone moved the SW4 DIP switches. Reconfigure the gateway in Home Assistant and pick the matching format, or set the switches back and power-cycle the gateway.
+- **The form says the gateway is still starting up** — The gateway reports no values for about two minutes after power-up, and the integration needs them to detect the temperature format. Wait a few minutes and submit the form again.
 
 ## Removal
 

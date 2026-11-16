@@ -12,7 +12,7 @@ from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.intesis_modbus.const import DOMAIN
 
-from . import MOCK_SERIAL_ENTRY_DATA, seed_single_unit
+from . import MOCK_SERIAL_ENTRY_DATA, MOCK_SERIAL_ENTRY_OPTIONS, seed_single_unit
 
 
 @pytest.fixture(autouse=True)
@@ -60,8 +60,9 @@ def mock_config_entry() -> MockConfigEntry:
     return MockConfigEntry(
         domain=DOMAIN,
         entry_id="01JTESTINTESISSINGLE000000",
-        unique_id="/dev/ttyUSB0:1",
+        minor_version=2,
         data=MOCK_SERIAL_ENTRY_DATA,
+        options=MOCK_SERIAL_ENTRY_OPTIONS,
         title="INMBSMHI001R000",
     )
 

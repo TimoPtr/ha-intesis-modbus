@@ -4,7 +4,6 @@
     'entry': dict({
       'baudrate': 9600,
       'device': '**REDACTED**',
-      'has_vane': True,
       'model': 'INMBSMHI001R000',
       'temperature_format': 'decicelsius',
       'type': 'serial',
@@ -13,6 +12,9 @@
     'failed': dict({
     }),
     'family': 'single_unit',
+    'options': dict({
+      'has_vane': True,
+    }),
     'read_error': None,
     'registers': dict({
       'holding': dict({

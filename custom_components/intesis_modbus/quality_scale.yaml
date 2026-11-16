@@ -71,7 +71,11 @@ rules:
   exception-translations: done
   icon-translations: done
   reconfiguration-flow: done
-  repair-issues: done
+  repair-issues:
+    status: exempt
+    comment: |
+      Nothing needs the user to step in: the integration follows the
+      temperature format the gateway reports.
   stale-devices: done
 
   # Platinum

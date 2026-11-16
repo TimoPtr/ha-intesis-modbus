@@ -109,7 +109,7 @@ async def async_setup_entry(
                     coordinator,
                     device,
                     CLIMATE_DESCRIPTION,
-                    has_vane=entry.data.get(CONF_HAS_VANE, True),
+                    has_vane=entry.options.get(CONF_HAS_VANE, True),
                 )
             ]
         )

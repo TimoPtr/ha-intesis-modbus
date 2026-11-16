@@ -53,11 +53,15 @@ def create_modbus_params(
     return ModbusTcpParams(host=data[CONF_HOST], port=data[CONF_PORT])
 
 
-def unique_id_for(data: Mapping[str, Any]) -> str:
-    """Return the unique id of the gateway these link settings reach."""
+def link_match(data: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the entry data that tells which gateway these link settings reach."""
     if data[CONF_TYPE] == TYPE_SERIAL:
-        return f"{data[CONF_DEVICE]}:{data[CONF_UNIT_ID]}"
-    return f"{data[CONF_HOST]}:{data[CONF_PORT]}:{data[CONF_UNIT_ID]}"
+        return {CONF_DEVICE: data[CONF_DEVICE], CONF_UNIT_ID: data[CONF_UNIT_ID]}
+    return {
+        CONF_HOST: data[CONF_HOST],
+        CONF_PORT: data[CONF_PORT],
+        CONF_UNIT_ID: data[CONF_UNIT_ID],
+    }
 
 
 def create_device(unit: ModbusUnit, data: Mapping[str, Any]) -> IntesisDevice:

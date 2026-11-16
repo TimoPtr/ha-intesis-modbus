@@ -23,6 +23,7 @@ async def async_get_config_entry_diagnostics(
     """Return diagnostics for a config entry: the live raw register map."""
     diagnostics: dict[str, Any] = {
         "entry": async_redact_data(dict(entry.data), TO_REDACT),
+        "options": dict(entry.options),
         "state": entry.state.value,
         "family": None,
         "updated": None,
