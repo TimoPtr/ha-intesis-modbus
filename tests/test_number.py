@@ -20,6 +20,8 @@ from modbus_connection.mock import MockModbusConnection, WriteEvent
 from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
 from syrupy.assertion import SnapshotAssertion
 
+from custom_components.intesis_modbus.const import DOMAIN
+
 PREFIX = "number.inmbsmhi001r000_"
 
 
@@ -83,13 +85,15 @@ async def test_window_timeout_write_and_validation(
         blocking=True,
     )
     assert [(w.address, w.values[0]) for w in writes] == [(13, 5)]
-    with pytest.raises(ServiceValidationError):
+    with pytest.raises(ServiceValidationError) as err:
         await hass.services.async_call(
             NUMBER_DOMAIN,
             SERVICE_SET_VALUE,
             {ATTR_ENTITY_ID: PREFIX + "open_window_timeout", ATTR_VALUE: 31},
             blocking=True,
         )
+    assert err.value.translation_domain == NUMBER_DOMAIN
+    assert err.value.translation_key == "out_of_range"
 
 
 async def test_write_failure_raises(
@@ -99,10 +103,12 @@ async def test_write_failure_raises(
 ) -> None:
     """A write the gateway does not answer surfaces as an error."""
     mock_connection.for_unit(1).fail_write(22, ModbusTimeoutError())
-    with pytest.raises(HomeAssistantError):
+    with pytest.raises(HomeAssistantError) as err:
         await hass.services.async_call(
             NUMBER_DOMAIN,
             SERVICE_SET_VALUE,
             {ATTR_ENTITY_ID: PREFIX + "external_temperature_reference", ATTR_VALUE: 20},
             blocking=True,
         )
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == "write_failed"

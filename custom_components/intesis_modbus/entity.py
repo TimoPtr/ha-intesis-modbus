@@ -61,6 +61,13 @@ class IntesisEntityDescription(EntityDescription):
     report_name: str
     """The sub-system name the update report mentions for this value."""
     families: frozenset[GatewayFamily] = SINGLE_UNIT_ONLY
+    available_without_unit: bool = False
+    """
+    Whether the entity belongs to a single-unit gateway and not to its unit.
+
+    Such an entity stays available while the gateway cannot reach the air
+    conditioner; every other one goes unavailable with the unit.
+    """
 
 
 class IntesisEntity(CoordinatorEntity[IntesisCoordinator]):
@@ -98,7 +105,12 @@ class IntesisEntity(CoordinatorEntity[IntesisCoordinator]):
             or self.entity_description.report_name not in self.coordinator.data.updated
         ):
             return False
-        return self._indoor_unit is None or self._indoor_unit.present
+        if self._indoor_unit is not None:
+            return self._indoor_unit.present
+        return (
+            self.entity_description.available_without_unit
+            or not self.coordinator.unit_unreachable
+        )
 
     async def _async_write(self, write: Callable[[], Awaitable[None]]) -> None:
         """Run one write against the gateway, then ask for a refresh."""

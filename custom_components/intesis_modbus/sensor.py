@@ -129,6 +129,7 @@ SENSORS: Final[tuple[IntesisSensorDescription[IntesisSingleUnitGateway], ...]] =
     ),
     IntesisSensorDescription(
         key="error",
+        available_without_unit=True,
         translation_key="error",
         report_name="control",
         device_class=SensorDeviceClass.ENUM,
@@ -152,6 +153,7 @@ SENSORS: Final[tuple[IntesisSensorDescription[IntesisSingleUnitGateway], ...]] =
     ),
     IntesisSensorDescription(
         key="undervoltage_hours",
+        available_without_unit=True,
         translation_key="undervoltage_hours",
         report_name="status",
         device_class=SensorDeviceClass.DURATION,

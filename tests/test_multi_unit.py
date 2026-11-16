@@ -317,7 +317,7 @@ async def test_unit_losing_communication_goes_unavailable(
 ) -> None:
     """A unit the gateway stops talking to is unavailable, the others are not."""
     mock_multi_connection.for_unit(1).holding[140] = 1  # unit 7 comm error
-    freezer.tick(timedelta(seconds=SCAN_INTERVAL + 1))
+    freezer.tick(timedelta(seconds=SCAN_INTERVAL))
     async_fire_time_changed(hass)
     await hass.async_block_till_done(wait_background_tasks=True)
     assert hass.states.get("climate.indoor_unit_7").state == STATE_UNAVAILABLE
@@ -333,7 +333,7 @@ async def test_unit_block_refused_goes_unavailable_alone(
 ) -> None:
     """A block the gateway stops serving takes only its own unit down."""
     mock_multi_connection.for_unit(1).fail_read(140, ServerDeviceFailureError())
-    freezer.tick(timedelta(seconds=SCAN_INTERVAL + 1))
+    freezer.tick(timedelta(seconds=SCAN_INTERVAL))
     async_fire_time_changed(hass)
     await hass.async_block_till_done(wait_background_tasks=True)
     assert hass.states.get("climate.indoor_unit_7").state == STATE_UNAVAILABLE
@@ -352,7 +352,7 @@ async def test_unit_coming_online_later_gets_entities(
     assert hass.states.get("climate.indoor_unit_5") is None
     seed_multi_unit(mock_multi_connection.for_unit(1), present=(0, 1, 5, 7))
     for _ in range(-(-45 // REDISCOVERY_BATCH)):
-        freezer.tick(timedelta(seconds=SCAN_INTERVAL + 1))
+        freezer.tick(timedelta(seconds=SCAN_INTERVAL))
         async_fire_time_changed(hass)
         await hass.async_block_till_done(wait_background_tasks=True)
     assert hass.states.get("climate.indoor_unit_5").state == HVACMode.HEAT
@@ -376,11 +376,13 @@ async def test_half_degree_setpoint_is_refused_before_any_write(
     """Indoor units take whole degrees only; the library refuses 24.5 locally."""
     writes: list[WriteEvent] = []
     mock_multi_connection.for_unit(1).on_write(writes.append)
-    with pytest.raises(ServiceValidationError):
+    with pytest.raises(ServiceValidationError) as err:
         await hass.services.async_call(
             CLIMATE_DOMAIN,
             SERVICE_SET_TEMPERATURE,
             {ATTR_ENTITY_ID: "climate.indoor_unit_7", ATTR_TEMPERATURE: 24.5},
             blocking=True,
         )
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == "unsupported_value"
     assert writes == []

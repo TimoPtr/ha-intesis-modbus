@@ -15,6 +15,8 @@ from modbus_connection.mock import MockModbusConnection, WriteEvent
 from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
 from syrupy.assertion import SnapshotAssertion
 
+from custom_components.intesis_modbus.const import DOMAIN
+
 PREFIX = "button.inmbsmhi001r000_"
 
 
@@ -69,10 +71,12 @@ async def test_button_write_failure_raises(
 ) -> None:
     """A press the gateway does not answer surfaces as an error."""
     mock_connection.for_unit(1).fail_write(45, ModbusTimeoutError())
-    with pytest.raises(HomeAssistantError):
+    with pytest.raises(HomeAssistantError) as err:
         await hass.services.async_call(
             BUTTON_DOMAIN,
             SERVICE_PRESS,
             {ATTR_ENTITY_ID: PREFIX + "reset_error"},
             blocking=True,
         )
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == "write_failed"
