@@ -12,6 +12,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from intesis_gw_modbus import (
+    ErrorState,
     GatewayFamily,
     IntesisSingleUnitGateway,
     NoIndoorUnitsError,
@@ -50,6 +51,8 @@ class IntesisCoordinator(DataUpdateCoordinator[UpdateReport]):
         self.device = device
         self.gateway_device_id: str | None = None  # set once the device exists
         self._failing: set[str] = set()
+        self.unit_unreachable = False
+        """Whether a single-unit gateway reports it cannot reach its unit."""
 
     @override
     async def _async_update_data(self) -> UpdateReport:
@@ -74,8 +77,32 @@ class IntesisCoordinator(DataUpdateCoordinator[UpdateReport]):
                 "every sub-system failed to refresh", list(report.failed.values())
             )
         self._log_component_changes(report)
+        self._check_unit_reachable()
         self._check_temperature_format()
         return report
+
+    def _check_unit_reachable(self) -> None:
+        """
+        Note whether the gateway reaches its unit, and log when that changes.
+
+        A multi-unit gateway reports this per indoor unit, through ``present``.
+        """
+        device = self.device
+        if not isinstance(device, IntesisSingleUnitGateway):
+            return
+        error = device.error
+        unreachable = (
+            error is not None and error.state is ErrorState.COMMUNICATION_ERROR
+        )
+        if unreachable and not self.unit_unreachable:
+            _LOGGER.info(
+                "%s: the gateway cannot reach the air conditioner, "
+                "the unit's entities are unavailable",
+                self.name,
+            )
+        elif self.unit_unreachable and not unreachable:
+            _LOGGER.info("%s: the gateway reaches the air conditioner again", self.name)
+        self.unit_unreachable = unreachable
 
     def _check_temperature_format(self) -> None:
         """Raise a repair issue when the DIP switches no longer match the entry."""

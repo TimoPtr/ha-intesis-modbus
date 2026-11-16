@@ -116,6 +116,8 @@ Single-unit gateways: reset error. Disabled by default: reset gateway. Indoor un
 
 The integration polls the gateway every 15 seconds, one request per documented register block. After a command it refreshes right away. If the gateway stops answering, its entities become unavailable and come back on the next successful poll.
 
+A single-unit gateway that answers but cannot reach its air conditioner reports a communication error. The entities of the unit, the climate entity included, then become unavailable. The entities of the gateway itself stay available, and the error sensor shows `communication_error`.
+
 On a multi-unit gateway, indoor units the gateway starts talking to after setup are found automatically: each poll also checks a few empty unit slots, so a unit that was off at startup appears with its own device within a few minutes. A unit the gateway stops talking to keeps its device and shows as unavailable.
 
 ## Use cases

@@ -39,6 +39,7 @@ class IntesisSwitchDescription[TargetT](
 SWITCHES: Final[tuple[IntesisSwitchDescription[IntesisSingleUnitGateway], ...]] = (
     IntesisSwitchDescription(
         key="window_contact",
+        available_without_unit=True,
         translation_key="window_contact",
         report_name="control",
         entity_category=EntityCategory.CONFIG,
@@ -55,6 +56,7 @@ SWITCHES: Final[tuple[IntesisSwitchDescription[IntesisSingleUnitGateway], ...]] 
     ),
     IntesisSwitchDescription(
         key="gateway_disabled",
+        available_without_unit=True,
         translation_key="gateway_disabled",
         report_name="control",
         entity_category=EntityCategory.CONFIG,
@@ -64,6 +66,7 @@ SWITCHES: Final[tuple[IntesisSwitchDescription[IntesisSingleUnitGateway], ...]] 
     ),
     IntesisSwitchDescription(
         key="block_periodic_sendings",
+        available_without_unit=True,
         translation_key="block_periodic_sendings",
         report_name="diagnostics",
         entity_category=EntityCategory.CONFIG,
@@ -73,6 +76,7 @@ SWITCHES: Final[tuple[IntesisSwitchDescription[IntesisSingleUnitGateway], ...]] 
     ),
     IntesisSwitchDescription(
         key="master",
+        available_without_unit=True,
         translation_key="master",
         report_name="diagnostics",
         entity_category=EntityCategory.CONFIG,
