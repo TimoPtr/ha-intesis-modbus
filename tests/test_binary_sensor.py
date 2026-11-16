@@ -50,7 +50,7 @@ async def test_alarm_and_window(
     unit = mock_connection.for_unit(1)
     unit.holding[10] = 1
     unit.holding[31] = 1
-    freezer.tick(timedelta(seconds=SCAN_INTERVAL + 1))
+    freezer.tick(timedelta(seconds=SCAN_INTERVAL))
     async_fire_time_changed(hass)
     await hass.async_block_till_done(wait_background_tasks=True)
     assert hass.states.get(PREFIX + "alarm").state == STATE_ON
