@@ -76,7 +76,7 @@ async def test_wrong_model_is_setup_error(
 
 
 async def _poll(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:
-    freezer.tick(timedelta(seconds=SCAN_INTERVAL + 1))
+    freezer.tick(timedelta(seconds=SCAN_INTERVAL))
     async_fire_time_changed(hass)
     await hass.async_block_till_done(wait_background_tasks=True)
 
