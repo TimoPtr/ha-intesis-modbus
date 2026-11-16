@@ -50,6 +50,7 @@ BUTTONS: Final[tuple[IntesisButtonDescription[IntesisSingleUnitGateway], ...]] =
     ),
     IntesisButtonDescription(
         key="reset_gateway",
+        available_without_unit=True,
         translation_key="reset_gateway",
         report_name="control",
         device_class=ButtonDeviceClass.RESTART,

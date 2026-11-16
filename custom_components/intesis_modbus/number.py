@@ -52,6 +52,7 @@ NUMBERS: Final[tuple[IntesisNumberDescription, ...]] = (
     ),
     IntesisNumberDescription(
         key="window_timeout",
+        available_without_unit=True,
         translation_key="window_timeout",
         report_name="control",
         device_class=NumberDeviceClass.DURATION,
