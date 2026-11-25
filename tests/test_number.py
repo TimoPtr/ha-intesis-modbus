@@ -47,7 +47,7 @@ async def test_external_temperature_write(
     mock_connection: MockModbusConnection,
 ) -> None:
     """The external reference lands on register 22 in the gateway's format."""
-    state = hass.states.get(PREFIX + "external_temperature_reference")
+    state = hass.states.get(PREFIX + "air_conditioner_external_temperature_reference")
     assert state is not None
     assert state.state == "unknown"
     assert state.attributes["min"] == 10
@@ -58,7 +58,10 @@ async def test_external_temperature_write(
     await hass.services.async_call(
         NUMBER_DOMAIN,
         SERVICE_SET_VALUE,
-        {ATTR_ENTITY_ID: PREFIX + "external_temperature_reference", ATTR_VALUE: 21.3},
+        {
+            ATTR_ENTITY_ID: PREFIX + "air_conditioner_external_temperature_reference",
+            ATTR_VALUE: 21.3,
+        },
         blocking=True,
     )
     assert [(w.address, w.values[0]) for w in writes] == [(22, 213)]
@@ -107,7 +110,11 @@ async def test_write_failure_raises(
         await hass.services.async_call(
             NUMBER_DOMAIN,
             SERVICE_SET_VALUE,
-            {ATTR_ENTITY_ID: PREFIX + "external_temperature_reference", ATTR_VALUE: 20},
+            {
+                ATTR_ENTITY_ID: PREFIX
+                + "air_conditioner_external_temperature_reference",
+                ATTR_VALUE: 20,
+            },
             blocking=True,
         )
     assert err.value.translation_domain == DOMAIN

@@ -50,7 +50,7 @@ async def test_switches_write(
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     expected = {
-        "remote_controller_lock": 8,
+        "air_conditioner_remote_controller_lock": 8,
         "window_contact": 6,
         "gateway_disabled": 7,
         "block_repeated_commands": 97,
@@ -90,7 +90,7 @@ async def test_switch_reflects_register(
     await hass.services.async_call(
         SWITCH_DOMAIN,
         SERVICE_TURN_ON,
-        {ATTR_ENTITY_ID: PREFIX + "remote_controller_lock"},
+        {ATTR_ENTITY_ID: PREFIX + "air_conditioner_remote_controller_lock"},
         blocking=True,
     )
     assert hass.states.get(PREFIX + "window_contact").state == STATE_ON

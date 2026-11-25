@@ -1,5 +1,5 @@
 # Copyright (c) 2026 Timothy (TimoPtr)
-"""Data update coordinator for Intesis Modbus gateways."""
+"""Data update coordinators for Intesis Modbus gateways."""
 
 import logging
 from dataclasses import dataclass
@@ -7,8 +7,10 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, override
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import update_coordinator
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from intesis_gw_modbus import (
     ErrorState,
@@ -30,6 +32,11 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+# Logged at info level from Home Assistant 2026.12 on, as an error before
+UnitUnreachable: type[UpdateFailed] = getattr(
+    update_coordinator, "UpdateFailedUnreachable", UpdateFailed
+)
+
 
 class IntesisCoordinator(DataUpdateCoordinator[UpdateReport]):
     """Poll one gateway and hand its update report to the entities."""
@@ -50,8 +57,8 @@ class IntesisCoordinator(DataUpdateCoordinator[UpdateReport]):
         self.device = device
         self.gateway_device_id: str | None = None  # set once the device exists
         self._failing: set[str] = set()
-        self.unit_unreachable = False
-        """Whether a single-unit gateway reports it cannot reach its unit."""
+        self.unit: IntesisUnitCoordinator | None = None
+        """What follows the air conditioner behind a single-unit gateway."""
 
     @override
     async def _async_update_data(self) -> UpdateReport:
@@ -76,31 +83,7 @@ class IntesisCoordinator(DataUpdateCoordinator[UpdateReport]):
                 "every sub-system failed to refresh", list(report.failed.values())
             )
         self._log_component_changes(report)
-        self._check_unit_reachable()
         return report
-
-    def _check_unit_reachable(self) -> None:
-        """
-        Note whether the gateway reaches its unit, and log when that changes.
-
-        A multi-unit gateway reports this per indoor unit, through ``present``.
-        """
-        device = self.device
-        if not isinstance(device, IntesisSingleUnitGateway):
-            return
-        error = device.error
-        unreachable = (
-            error is not None and error.state is ErrorState.COMMUNICATION_ERROR
-        )
-        if unreachable and not self.unit_unreachable:
-            _LOGGER.info(
-                "%s: the gateway cannot reach the air conditioner, "
-                "the unit's entities are unavailable",
-                self.name,
-            )
-        elif self.unit_unreachable and not unreachable:
-            _LOGGER.info("%s: the gateway reaches the air conditioner again", self.name)
-        self.unit_unreachable = unreachable
 
     def _log_component_changes(self, report: UpdateReport) -> None:
         """Log a sub-system's first failure and its recovery, once each."""
@@ -133,6 +116,18 @@ class IntesisCoordinator(DataUpdateCoordinator[UpdateReport]):
             info["sw_version"] = version
         return info
 
+    @cached_property
+    def air_conditioner_device_info(self) -> dr.DeviceInfo:
+        """Describe the air conditioner behind a single-unit gateway."""
+        entry = self.config_entry
+        return dr.DeviceInfo(
+            identifiers={(DOMAIN, f"{entry.entry_id}_unit")},
+            via_device_id=self.gateway_device_id,
+            manufacturer=self.device.brand.name,
+            translation_key="air_conditioner",
+            translation_placeholders={"gateway": entry.title},
+        )
+
     def indoor_unit_device_info(self, number: int) -> dr.DeviceInfo:
         """Describe one indoor unit behind a multi-unit gateway."""
         entry = self.config_entry
@@ -144,6 +139,59 @@ class IntesisCoordinator(DataUpdateCoordinator[UpdateReport]):
             translation_key="indoor_unit",
             translation_placeholders={"number": str(number)},
         )
+
+
+class IntesisUnitCoordinator(DataUpdateCoordinator[UpdateReport]):
+    """
+    Follow the air conditioner behind a single-unit gateway.
+
+    The gateway coordinator does the polling. This one passes its report on to
+    the entities of the air conditioner, unless the gateway cannot reach it.
+    """
+
+    config_entry: IntesisConfigEntry
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: IntesisConfigEntry,
+        gateway: IntesisCoordinator,
+        device: IntesisSingleUnitGateway,
+    ) -> None:
+        """Initialize the coordinator."""
+        super().__init__(
+            hass,
+            _LOGGER,
+            config_entry=entry,
+            name=f"{entry.title} air conditioner",
+        )
+        self.gateway = gateway
+        self.device = device
+
+    @callback
+    def async_follow_gateway(self) -> None:
+        """Refresh after each poll of the gateway."""
+        self.config_entry.async_create_background_task(
+            self.hass, self.async_refresh(), f"{DOMAIN}_{self.name}_refresh"
+        )
+
+    @override
+    async def async_request_refresh(self) -> None:
+        """Ask the gateway for a poll, which this coordinator then follows."""
+        await self.gateway.async_request_refresh()
+
+    @override
+    async def _async_update_data(self) -> UpdateReport:
+        if not self.gateway.last_update_success:
+            raise UnitUnreachable(
+                translation_domain=DOMAIN, translation_key="gateway_unavailable"
+            ) from self.gateway.last_exception
+        error = self.device.error
+        if error is not None and error.state is ErrorState.COMMUNICATION_ERROR:
+            raise UnitUnreachable(
+                translation_domain=DOMAIN, translation_key="unit_unreachable"
+            )
+        return self.gateway.data
 
 
 @dataclass

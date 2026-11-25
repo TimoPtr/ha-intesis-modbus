@@ -97,15 +97,22 @@ async def test_temperatures_unavailable_when_block_fails(
     mock_connection: MockModbusConnection,
 ) -> None:
     """A refused temperature block hides only the sensors it backs."""
-    assert hass.states.get(PREFIX + "outdoor_intake_temperature").state == "12.5"
-    assert hass.states.get(PREFIX + "ambient_temperature").state == "20.3"
+    assert (
+        hass.states.get(PREFIX + "air_conditioner_outdoor_intake_temperature").state
+        == "12.5"
+    )
+    assert (
+        hass.states.get(PREFIX + "air_conditioner_ambient_temperature").state == "20.3"
+    )
     mock_connection.for_unit(1).fail_read(60, IllegalDataAddressError())
     await _poll(hass, freezer)
     assert (
-        hass.states.get(PREFIX + "outdoor_intake_temperature").state
+        hass.states.get(PREFIX + "air_conditioner_outdoor_intake_temperature").state
         == STATE_UNAVAILABLE
     )
-    assert hass.states.get(PREFIX + "ambient_temperature").state == "20.3"
+    assert (
+        hass.states.get(PREFIX + "air_conditioner_ambient_temperature").state == "20.3"
+    )
 
 
 async def test_operation_hours_follows_gateway_availability(
@@ -115,13 +122,16 @@ async def test_operation_hours_follows_gateway_availability(
     mock_connection: MockModbusConnection,
 ) -> None:
     """The counter goes unavailable with the gateway and keeps its value after."""
-    assert hass.states.get(PREFIX + "operation_time").state == "1234"
+    assert hass.states.get(PREFIX + "air_conditioner_operation_time").state == "1234"
     mock_connection.for_unit(1).fail_requests(ModbusTimeoutError())
     await _poll(hass, freezer)
-    assert hass.states.get(PREFIX + "operation_time").state == STATE_UNAVAILABLE
+    assert (
+        hass.states.get(PREFIX + "air_conditioner_operation_time").state
+        == STATE_UNAVAILABLE
+    )
     mock_connection.for_unit(1).fail_requests(None)
     await _poll(hass, freezer)
-    assert hass.states.get(PREFIX + "operation_time").state == "1234"
+    assert hass.states.get(PREFIX + "air_conditioner_operation_time").state == "1234"
 
 
 async def test_operation_hours_restores_until_the_gateway_reports(
@@ -136,7 +146,7 @@ async def test_operation_hours_restores_until_the_gateway_reports(
         hass,
         [
             (
-                State(PREFIX + "operation_time", "1200"),
+                State(PREFIX + "air_conditioner_operation_time", "1200"),
                 {"native_value": 1200, "native_unit_of_measurement": "h"},
             )
         ],
@@ -146,10 +156,10 @@ async def test_operation_hours_restores_until_the_gateway_reports(
     mock_config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
-    assert hass.states.get(PREFIX + "operation_time").state == "1200"
+    assert hass.states.get(PREFIX + "air_conditioner_operation_time").state == "1200"
     unit.holding[9] = 1234
     await _poll(hass, freezer)
-    assert hass.states.get(PREFIX + "operation_time").state == "1234"
+    assert hass.states.get(PREFIX + "air_conditioner_operation_time").state == "1234"
 
 
 async def test_operation_hours_unavailable_when_its_block_fails(
@@ -161,8 +171,14 @@ async def test_operation_hours_unavailable_when_its_block_fails(
     """When only the control block fails the counter is unavailable, not stale."""
     mock_connection.for_unit(1).fail_read(0, IllegalDataAddressError())
     await _poll(hass, freezer)
-    assert hass.states.get(PREFIX + "operation_time").state == STATE_UNAVAILABLE
-    assert hass.states.get(PREFIX + "outdoor_intake_temperature").state == "12.5"
+    assert (
+        hass.states.get(PREFIX + "air_conditioner_operation_time").state
+        == STATE_UNAVAILABLE
+    )
+    assert (
+        hass.states.get(PREFIX + "air_conditioner_outdoor_intake_temperature").state
+        == "12.5"
+    )
     mock_connection.for_unit(1).fail_read(0, None)
     await _poll(hass, freezer)
-    assert hass.states.get(PREFIX + "operation_time").state == "1234"
+    assert hass.states.get(PREFIX + "air_conditioner_operation_time").state == "1234"

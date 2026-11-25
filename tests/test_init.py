@@ -36,15 +36,19 @@ async def test_setup_and_unload(
     init_integration: MockConfigEntry,
     device_registry: dr.DeviceRegistry,
 ) -> None:
-    """The entry loads, registers the gateway device, and unloads cleanly."""
+    """The entry loads, registers the gateway and its unit, and unloads cleanly."""
     assert init_integration.state is ConfigEntryState.LOADED
-    [device] = dr.async_entries_for_config_entry(
+    gateway, unit = dr.async_entries_for_config_entry(
         device_registry, init_integration.entry_id
     )
-    assert (DOMAIN, init_integration.entry_id) in device.identifiers
-    assert device.manufacturer == MANUFACTURER
-    assert device.model == "INMBSMHI001R000"
-    assert device.sw_version == "20"
+    assert (DOMAIN, init_integration.entry_id) in gateway.identifiers
+    assert gateway.manufacturer == MANUFACTURER
+    assert gateway.model == "INMBSMHI001R000"
+    assert gateway.sw_version == "20"
+    assert (DOMAIN, f"{init_integration.entry_id}_unit") in unit.identifiers
+    assert unit.manufacturer == "Mitsubishi Heavy Industries"
+    assert unit.name == "INMBSMHI001R000 air conditioner"
+    assert unit.via_device_id == gateway.id
     await hass.config_entries.async_unload(init_integration.entry_id)
     await hass.async_block_till_done(wait_background_tasks=True)
     assert init_integration.state is ConfigEntryState.NOT_LOADED
@@ -94,7 +98,7 @@ async def test_temperature_format_follows_the_dip_switches(
     for address, value in {4: 22, 5: 20, 23: 22, 24: 30, 25: 16}.items():
         unit.holding[address] = value
     await _poll(hass, freezer)
-    state = hass.states.get("climate.inmbsmhi001r000")
+    state = hass.states.get("climate.inmbsmhi001r000_air_conditioner")
     assert state is not None
     assert state.attributes["temperature"] == 22
     assert state.attributes["current_temperature"] == 20
@@ -121,7 +125,7 @@ async def test_entry_from_an_older_version_is_migrated(
     assert entry.unique_id is None
     assert entry.data == MOCK_SERIAL_ENTRY_DATA
     assert entry.options == {CONF_HAS_VANE: False}
-    state = hass.states.get("climate.inmbsmhi001r000")
+    state = hass.states.get("climate.inmbsmhi001r000_air_conditioner")
     assert state is not None
     assert "swing_modes" not in state.attributes
 

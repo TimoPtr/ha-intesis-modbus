@@ -1,5 +1,5 @@
 # serializer version: 1
-# name: test_all_binary_sensors_snapshot[binary_sensor.inmbsmhi001r000_alarm-entry]
+# name: test_all_binary_sensors_snapshot[binary_sensor.inmbsmhi001r000_air_conditioner_alarm-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
       None,
@@ -9,11 +9,11 @@
     'config_entry_id': <ANY>,
     'config_subentry_id': None,
     'device_class': None,
-    'device_id': <DeviceEntry identifiers=[('intesis_modbus', '01JTESTINTESISSINGLE000000')]>,
+    'device_id': <DeviceEntry identifiers=[('intesis_modbus', '01JTESTINTESISSINGLE000000_unit')]>,
     'disabled_by': None,
     'domain': 'binary_sensor',
     'entity_category': <EntityCategory.DIAGNOSTIC: 'diagnostic'>,
-    'entity_id': 'binary_sensor.inmbsmhi001r000_alarm',
+    'entity_id': 'binary_sensor.inmbsmhi001r000_air_conditioner_alarm',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -36,21 +36,21 @@
     'unit_of_measurement': None,
   })
 # ---
-# name: test_all_binary_sensors_snapshot[binary_sensor.inmbsmhi001r000_alarm-state]
+# name: test_all_binary_sensors_snapshot[binary_sensor.inmbsmhi001r000_air_conditioner_alarm-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'problem',
-      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'INMBSMHI001R000 Alarm',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'INMBSMHI001R000 air conditioner Alarm',
     }),
     'context': <ANY>,
-    'entity_id': 'binary_sensor.inmbsmhi001r000_alarm',
+    'entity_id': 'binary_sensor.inmbsmhi001r000_air_conditioner_alarm',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,
     'state': 'off',
   })
 # ---
-# name: test_all_binary_sensors_snapshot[binary_sensor.inmbsmhi001r000_window-entry]
+# name: test_all_binary_sensors_snapshot[binary_sensor.inmbsmhi001r000_air_conditioner_window-entry]
   EntityRegistryEntrySnapshot({
     'aliases': list([
       None,
@@ -60,11 +60,11 @@
     'config_entry_id': <ANY>,
     'config_subentry_id': None,
     'device_class': None,
-    'device_id': <DeviceEntry identifiers=[('intesis_modbus', '01JTESTINTESISSINGLE000000')]>,
+    'device_id': <DeviceEntry identifiers=[('intesis_modbus', '01JTESTINTESISSINGLE000000_unit')]>,
     'disabled_by': None,
     'domain': 'binary_sensor',
     'entity_category': None,
-    'entity_id': 'binary_sensor.inmbsmhi001r000_window',
+    'entity_id': 'binary_sensor.inmbsmhi001r000_air_conditioner_window',
     'has_entity_name': True,
     'hidden_by': None,
     'icon': None,
@@ -87,14 +87,14 @@
     'unit_of_measurement': None,
   })
 # ---
-# name: test_all_binary_sensors_snapshot[binary_sensor.inmbsmhi001r000_window-state]
+# name: test_all_binary_sensors_snapshot[binary_sensor.inmbsmhi001r000_air_conditioner_window-state]
   StateSnapshot({
     'attributes': ReadOnlyDict({
       <EntityStateAttribute.DEVICE_CLASS: 'device_class'>: 'window',
-      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'INMBSMHI001R000 Window',
+      <EntityStateAttribute.FRIENDLY_NAME: 'friendly_name'>: 'INMBSMHI001R000 air conditioner Window',
     }),
     'context': <ANY>,
-    'entity_id': 'binary_sensor.inmbsmhi001r000_window',
+    'entity_id': 'binary_sensor.inmbsmhi001r000_air_conditioner_window',
     'last_changed': <ANY>,
     'last_reported': <ANY>,
     'last_updated': <ANY>,

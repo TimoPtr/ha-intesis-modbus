@@ -17,7 +17,11 @@ from intesis_gw_modbus import (
 from modbus_connection import ModbusError
 
 from .const import DOMAIN
-from .coordinator import IntesisConfigEntry, IntesisCoordinator
+from .coordinator import (
+    IntesisConfigEntry,
+    IntesisCoordinator,
+    IntesisUnitCoordinator,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Iterable
@@ -65,12 +69,13 @@ class IntesisEntityDescription(EntityDescription):
     """
     Whether the entity belongs to a single-unit gateway and not to its unit.
 
-    Such an entity stays available while the gateway cannot reach the air
-    conditioner; every other one goes unavailable with the unit.
+    Such an entity sits on the gateway device and stays available while the
+    gateway cannot reach the air conditioner; every other one sits on the air
+    conditioner and goes unavailable with it.
     """
 
 
-class IntesisEntity(CoordinatorEntity[IntesisCoordinator]):
+class IntesisEntity(CoordinatorEntity[IntesisCoordinator | IntesisUnitCoordinator]):
     """Defines a base Intesis entity."""
 
     _attr_has_entity_name = True
@@ -83,33 +88,34 @@ class IntesisEntity(CoordinatorEntity[IntesisCoordinator]):
         *,
         indoor_unit: IndoorUnitView | None = None,
     ) -> None:
-        """Place the entity on the gateway, or on one of its indoor units."""
-        super().__init__(coordinator)
+        """Place the entity on the gateway, its unit, or one of its indoor units."""
+        target: IntesisCoordinator | IntesisUnitCoordinator = coordinator
+        if coordinator.unit is not None and not description.available_without_unit:
+            target = coordinator.unit
+        on_air_conditioner = target is not coordinator
+        super().__init__(target)
         self.entity_description = description
         self._indoor_unit = indoor_unit
         entry_id = coordinator.config_entry.entry_id
-        if indoor_unit is None:
-            self._attr_unique_id = f"{entry_id}_{description.key}"
-            self._attr_device_info = coordinator.gateway_device_info
-        else:
+        if indoor_unit is not None:
             number = indoor_unit.number
             self._attr_unique_id = f"{entry_id}_unit_{number}_{description.key}"
             self._attr_device_info = coordinator.indoor_unit_device_info(number)
+            return
+        self._attr_unique_id = f"{entry_id}_{description.key}"
+        if on_air_conditioner:
+            self._attr_device_info = coordinator.air_conditioner_device_info
+        else:
+            self._attr_device_info = coordinator.gateway_device_info
 
     @property
     @override
     def available(self) -> bool:
         """Whether this entity's value was read in the most recent poll."""
-        if (
-            not super().available
-            or self.entity_description.report_name not in self.coordinator.data.updated
-        ):
-            return False
-        if self._indoor_unit is not None:
-            return self._indoor_unit.present
         return (
-            self.entity_description.available_without_unit
-            or not self.coordinator.unit_unreachable
+            super().available
+            and self.entity_description.report_name in self.coordinator.data.updated
+            and (self._indoor_unit is None or self._indoor_unit.present)
         )
 
     async def _async_write(self, write: Callable[[], Awaitable[None]]) -> None:
