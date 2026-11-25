@@ -45,13 +45,13 @@ async def test_alarm_and_window(
     mock_connection: MockModbusConnection,
 ) -> None:
     """Alarm and window status follow registers 10 and 31."""
-    assert hass.states.get(PREFIX + "alarm").state == STATE_OFF
-    assert hass.states.get(PREFIX + "window").state == STATE_OFF
+    assert hass.states.get(PREFIX + "air_conditioner_alarm").state == STATE_OFF
+    assert hass.states.get(PREFIX + "air_conditioner_window").state == STATE_OFF
     unit = mock_connection.for_unit(1)
     unit.holding[10] = 1
     unit.holding[31] = 1
     freezer.tick(timedelta(seconds=SCAN_INTERVAL))
     async_fire_time_changed(hass)
     await hass.async_block_till_done(wait_background_tasks=True)
-    assert hass.states.get(PREFIX + "alarm").state == STATE_ON
-    assert hass.states.get(PREFIX + "window").state == STATE_ON
+    assert hass.states.get(PREFIX + "air_conditioner_alarm").state == STATE_ON
+    assert hass.states.get(PREFIX + "air_conditioner_window").state == STATE_ON

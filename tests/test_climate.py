@@ -50,7 +50,7 @@ from custom_components.intesis_modbus.const import (
 
 from . import MOCK_SERIAL_ENTRY_DATA, seed_initialising_single_unit
 
-ENTITY_ID = "climate.inmbsmhi001r000"
+ENTITY_ID = "climate.inmbsmhi001r000_air_conditioner"
 
 
 async def _poll(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> None:

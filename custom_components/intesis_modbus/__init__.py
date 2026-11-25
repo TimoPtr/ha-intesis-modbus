@@ -7,10 +7,19 @@ from homeassistant.components.modbus import async_get_unit
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import Platform
 from homeassistant.helpers import device_registry as dr
-from intesis_gw_modbus import MODELS, IntesisMultiUnitGateway
+from intesis_gw_modbus import (
+    MODELS,
+    IntesisMultiUnitGateway,
+    IntesisSingleUnitGateway,
+)
 
 from .const import CONF_HAS_VANE, CONF_MODEL, CONF_UNIT_ID, DOMAIN
-from .coordinator import IntesisConfigEntry, IntesisCoordinator, IntesisRuntimeData
+from .coordinator import (
+    IntesisConfigEntry,
+    IntesisCoordinator,
+    IntesisRuntimeData,
+    IntesisUnitCoordinator,
+)
 from .helpers import create_device, create_modbus_params
 
 if TYPE_CHECKING:
@@ -39,6 +48,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: IntesisConfigEntry) -> N
         config_entry_id=entry.entry_id, device_info=coordinator.gateway_device_info
     )
     coordinator.gateway_device_id = gateway.id
+    if isinstance(device, IntesisSingleUnitGateway):
+        # An air conditioner the gateway cannot reach does not stop the setup
+        air_conditioner = IntesisUnitCoordinator(hass, entry, coordinator, device)
+        await air_conditioner.async_refresh()
+        entry.async_on_unload(
+            coordinator.async_add_listener(air_conditioner.async_follow_gateway)
+        )
+        coordinator.unit = air_conditioner
     entry.runtime_data = IntesisRuntimeData(
         coordinator, device, MODELS[entry.data[CONF_MODEL]].family
     )
@@ -69,7 +86,7 @@ async def async_remove_config_entry_device(
     entry: IntesisConfigEntry,
     device_entry: dr.AnyDeviceEntry,
 ) -> bool:
-    """Allow removing an indoor unit the gateway no longer talks to."""
+    """Allow removing an indoor unit a multi-unit gateway no longer talks to."""
     present: set[int] = set()
     if entry.state is ConfigEntryState.LOADED and isinstance(
         entry.runtime_data.device, IntesisMultiUnitGateway
@@ -79,7 +96,7 @@ async def async_remove_config_entry_device(
     for domain, identifier in device_entry.identifiers:
         if domain != DOMAIN:
             continue
-        if identifier == entry.entry_id:
+        if identifier in {entry.entry_id, f"{entry.entry_id}_unit"}:
             return False
         if (
             identifier.startswith(prefix)

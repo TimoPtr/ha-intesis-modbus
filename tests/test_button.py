@@ -52,7 +52,7 @@ async def test_buttons_write(
     await hass.services.async_call(
         BUTTON_DOMAIN,
         SERVICE_PRESS,
-        {ATTR_ENTITY_ID: PREFIX + "reset_error"},
+        {ATTR_ENTITY_ID: PREFIX + "air_conditioner_reset_error"},
         blocking=True,
     )
     await hass.services.async_call(
@@ -75,7 +75,7 @@ async def test_button_write_failure_raises(
         await hass.services.async_call(
             BUTTON_DOMAIN,
             SERVICE_PRESS,
-            {ATTR_ENTITY_ID: PREFIX + "reset_error"},
+            {ATTR_ENTITY_ID: PREFIX + "air_conditioner_reset_error"},
             blocking=True,
         )
     assert err.value.translation_domain == DOMAIN
